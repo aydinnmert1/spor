@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card, cx, Page } from '../components/ui'
-import { MEAL_SLOTS, NUTRITION_TIPS } from '../data/nutrition'
+import { DAY_FLOW, MEAL_SLOTS, NUTRITION_TIPS } from '../data/nutrition'
 import { save } from '../lib/db'
 import { targetsFor, useBodyWeights, useProfile } from '../lib/user'
 import { formatKg } from '../lib/workout'
@@ -45,8 +45,21 @@ export default function NutritionPage() {
         </Card>
       )}
 
+      <Card className="mb-4">
+        <div className="mb-2 text-xs text-slate-400">Hafta içi günün akışı</div>
+        <div className="flex justify-between gap-1">
+          {DAY_FLOW.map((f) => (
+            <div key={f.time} className="flex flex-1 flex-col items-center gap-1 text-center">
+              <span className={cx('h-2 w-2 rounded-full', f.label === 'Spor' ? 'bg-accent' : 'bg-slate-500')} />
+              <span className="text-[11px] font-semibold tabular-nums text-white">{f.time}</span>
+              <span className="text-[10px] leading-tight text-slate-400">{f.label}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       <p className="mb-3 text-sm text-slate-400">
-        Saymak zorunda değilsin: her öğünde bir seçeneği seçmen günlük hedefe yaklaşık olarak ulaştırır.
+        Saymak zorunda değilsin: her öğünde bir seçenek seçmen günlük hedefe yaklaşık olarak ulaştırır.
       </p>
 
       <div className="space-y-2">
@@ -64,12 +77,28 @@ export default function NutritionPage() {
               {isOpen && (
                 <div className="space-y-2 border-t border-white/5 px-4 pb-4 pt-3">
                   <p className="text-xs text-slate-400">{slot.why}</p>
+                  {slot.fixed && (
+                    <div className="rounded-xl border border-accent/40 bg-emerald-500/10 p-3">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold text-emerald-200">Sabit bowl’un</span>
+                        <span className="shrink-0 text-xs text-emerald-300/80">
+                          ~{slot.fixed[plan].kcal} kcal · {slot.fixed[plan].protein} g P
+                        </span>
+                      </div>
+                      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                        {slot.fixed[plan].items.map((it) => (
+                          <li key={it} className="rounded-full bg-slate-900/60 px-2.5 py-1 text-xs text-slate-200">{it}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {slot.fixed && <div className="pt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Yanına eklemek istersen</div>}
                   {slot.options[plan].map((o) => (
                     <div key={o.title} className="rounded-xl bg-slate-900/70 p-3">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-semibold text-slate-100">{o.title}</span>
                         <span className="shrink-0 text-xs text-slate-400">
-                          ~{o.kcal} kcal · {o.protein} g P
+                          {slot.fixed ? '+' : '~'}{o.kcal} kcal · {o.protein} g P
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-slate-300">{o.items}</p>

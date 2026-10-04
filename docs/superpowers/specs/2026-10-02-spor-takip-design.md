@@ -42,3 +42,9 @@ Shared weekly skeleton (Mon–Fri weights, Sat/Sun optional cardio). Same days a
 ## Testing
 
 Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template install for both plans, previous-set lookup, PR detection, progress series, outbox/soft delete, remote merge ordering and local-data adoption. UI verified manually in a mobile viewport.
+
+## Update 2026-10-04
+
+- **Identity:** no sign-up form. First launch asks "Mert or Simge"; profile data (sex, age, height, start weight, plan) is built in (`src/data/people.ts`). `user_id` on every row is the person key, so each person sees only their own records. A settings button switches the phone to the other person.
+- **Cloud:** one shared family Supabase account; RLS on a new `owner` column (auth uid), `user_id` is the person key (text). Pull fetches the whole account; screens filter by person. All ids are text.
+- **Nutrition:** weekday flow 07:30 wake → 08:00–09:00 gym → 09:30 breakfast. Breakfast is the fixed bowl (yogurt, banana, blueberries, tahini, almonds; + baby biscuits for Mert, + granola for Simge) shown as-is with optional additions only, never reductions. No supplements anywhere.

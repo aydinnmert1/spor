@@ -4,7 +4,7 @@ import { TEMPLATE } from '../data/programs'
 import { db, LOCAL_USER, remove, save, setMeta } from './db'
 import { adoptLocalData, mergeRemote } from './sync'
 import type { SetLog } from './types'
-import { bestOf, dayItems, e1rm, findPRs, installTemplate, isoWeekday, previousSets, programDays, progressSeries } from './workout'
+import { bestOf, dayItems, e1rm, ensurePerson, findPRs, installTemplate, isoWeekday, previousSets, programDays, progressSeries } from './workout'
 
 function set(partial: Partial<SetLog>): SetLog {
   return {
@@ -72,6 +72,23 @@ describe('installTemplate', () => {
     // Only the newest program stays active.
     const programs = await db.programs.toArray()
     expect(programs.filter((p) => p.active).map((p) => p.id)).toEqual([toning.id])
+  })
+})
+
+describe('ensurePerson', () => {
+  it('sets up each person once with their own plan, weight and profile', async () => {
+    await setMeta('uid', 'simge')
+    await ensurePerson('simge')
+    await ensurePerson('simge')
+    const profile = await db.profiles.get('simge')
+    expect(profile).toMatchObject({ user_id: 'simge', name: 'Simge', plan_key: 'sikilasma', kcal_target: 1800 })
+    expect(await db.programs.where('user_id').equals('simge').count()).toBe(1)
+    expect((await db.body_weights.toArray()).map((w) => w.kg)).toEqual([70])
+
+    await setMeta('uid', 'mert')
+    await ensurePerson('mert')
+    expect(await db.profiles.get('mert')).toMatchObject({ user_id: 'mert', plan_key: 'guc', kcal_target: 2750 })
+    expect(await db.programs.where('user_id').equals('simge').count()).toBe(1)
   })
 })
 

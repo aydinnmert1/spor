@@ -1,3 +1,5 @@
+import { calcTargets } from '../data/nutrition'
+import { PEOPLE, type PersonKey } from '../data/people'
 import { PROGRAM_NAME, TEMPLATE } from '../data/programs'
 import { alive, currentUserId, db, save } from './db'
 import type { PlanKey, Program, ProgramDay, ProgramItem, Session, SetLog } from './types'
@@ -56,6 +58,37 @@ export async function installTemplate(plan: PlanKey): Promise<Program> {
     }
   }
   return program
+}
+
+/**
+ * Make sure the chosen person has a program, a starting body weight and an
+ * up-to-date profile. Call after `uid` meta is set to the person key.
+ */
+export async function ensurePerson(key: PersonKey): Promise<void> {
+  const person = PEOPLE[key]
+  if (!(await activeProgram(key))) await installTemplate(person.plan)
+  const weights = alive(await db.body_weights.where('user_id').equals(key).toArray()).sort((a, b) => a.date.localeCompare(b.date))
+  if (weights.length === 0) await save('body_weights', { date: localDate(), kg: person.start_weight_kg })
+  const weight = weights.at(-1)?.kg ?? person.start_weight_kg
+  const t = calcTargets({
+    sex: person.sex,
+    age: new Date().getFullYear() - person.birth_year,
+    height_cm: person.height_cm,
+    weight_kg: weight,
+    plan: person.plan,
+  })
+  const existing = alive(await db.profiles.where('user_id').equals(key).toArray())[0]
+  const wanted = {
+    name: person.name,
+    sex: person.sex,
+    birth_year: person.birth_year,
+    height_cm: person.height_cm,
+    plan_key: person.plan,
+    kcal_target: t.kcal,
+    protein_target: t.protein,
+  }
+  const same = existing && (Object.keys(wanted) as (keyof typeof wanted)[]).every((k) => existing[k] === wanted[k])
+  if (!same) await save('profiles', { id: key, ...wanted })
 }
 
 export async function activeProgram(uid: string): Promise<Program | undefined> {

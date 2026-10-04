@@ -31,54 +31,80 @@ export interface MealOption {
   protein: number
 }
 
+export interface FixedMeal {
+  items: string[]
+  kcal: number
+  protein: number
+}
+
 export interface MealSlot {
   key: string
   title: string
   when: string
   why: string
+  /** A meal that is always eaten as-is; `options` are then optional additions. */
+  fixed?: Record<PlanKey, FixedMeal>
   options: Record<PlanKey, MealOption[]>
 }
 
+/** Weekday rhythm: training first thing in the morning, breakfast after. */
+export const DAY_FLOW: { time: string; label: string }[] = [
+  { time: '07:30', label: 'Kalk' },
+  { time: '08:00', label: 'Spor' },
+  { time: '09:30', label: 'Kahvaltı' },
+  { time: '13:00', label: 'Öğle' },
+  { time: '16:30', label: 'Ara öğün' },
+  { time: '19:30', label: 'Akşam' },
+]
+
+// Breakfast bowl portions are estimates: ~200 g yogurt, 1 banana, a handful of
+// blueberries, 1 tbsp tahini, ~10 almonds; plus ~5 baby biscuits or ~30 g granola.
+const BOWL_BASE = ['Yoğurt (~200 g)', 'Muz (1 adet)', 'Yaban mersini (1 avuç)', 'Tahin (1 yemek kaşığı)', 'Badem (~10 adet)']
+
 export const MEAL_SLOTS: MealSlot[] = [
   {
-    key: 'kahvalti',
-    title: 'Kahvaltı',
-    when: 'Uyandıktan sonra 1 saat içinde',
-    why: 'Güne proteinle başlamak tokluk sağlar ve günlük protein hedefini kolaylaştırır.',
+    key: 'uyaninca',
+    title: 'Uyanınca (spordan önce)',
+    when: '07:30 · antrenmandan 30 dk önce',
+    why: 'Antrenmana 30 dakika var: mideyi yormayan, hızlı sindirilen bir şey ya da sadece su. Aç antrenman da olur; başın dönerse ya da güç düşerse küçük bir karbonhidrat ekle.',
     options: {
       guc: [
-        { title: 'Klasik yumurtalı', items: '3 yumurta (haşlanmış/omlet) + 60 g beyaz peynir + 2 dilim tam buğday ekmek + domates, salatalık, 5-6 zeytin', kcal: 650, protein: 38 },
-        { title: 'Yulaf kasesi', items: '80 g yulaf + 250 ml süt + 1 ölçek whey (veya 200 g yoğurt) + 1 muz + 1 yemek kaşığı fıstık ezmesi', kcal: 700, protein: 45 },
-        { title: 'Menemen', items: '3 yumurtalı menemen + 2 dilim ekmek + 40 g kaşar + 1 bardak ayran', kcal: 680, protein: 40 },
+        { title: 'Su + kahve', items: '1-2 bardak su, istersen sade kahve', kcal: 5, protein: 0 },
+        { title: 'Küçük muz', items: '1 küçük muz — özellikle squat/deadlift günleri', kcal: 90, protein: 1 },
+        { title: 'Hurma', items: '2-3 hurma', kcal: 70, protein: 1 },
       ],
       sikilasma: [
-        { title: 'Yumurta + peynir', items: '2 yumurta + 1 yumurta beyazı + 40 g light beyaz peynir + 1 dilim tam buğday ekmek + bol yeşillik, domates, salatalık', kcal: 380, protein: 30 },
-        { title: 'Yoğurt kasesi', items: '200 g süzme yoğurt + 30 g yulaf + 1 avuç çilek/yaban mersini + 1 tatlı kaşığı bal + tarçın', kcal: 360, protein: 26 },
-        { title: 'Sebzeli omlet', items: '2 yumurta + 2 beyaz ile ıspanak/mantarlı omlet + 1 dilim çavdar ekmeği + 5 zeytin', kcal: 350, protein: 28 },
+        { title: 'Su + kahve', items: '1-2 bardak su, istersen sade kahve', kcal: 5, protein: 0 },
+        { title: 'Hurma', items: '1-2 hurma — açlık hissedersen', kcal: 45, protein: 0 },
       ],
     },
   },
   {
-    key: 'ara1',
-    title: 'Ara öğün',
-    when: 'Kahvaltı ile öğle arası',
-    why: 'Uzun açlıkları önler, kas yıkımını azaltır ve akşam aşırı yemeyi engeller.',
+    key: 'kahvalti',
+    title: 'Kahvaltı (spordan sonra)',
+    when: '09:30 · duştan sonra',
+    why: 'Antrenman sonrası ilk öğün: karbonhidrat enerjiyi yerine koyar, protein kas onarımını başlatır. Bowl’un sabit; aşağıdakiler isteğe bağlı eklemeler.',
+    fixed: {
+      guc: { items: [...BOWL_BASE, 'Bebe bisküvisi (~5 adet)'], kcal: 530, protein: 16 },
+      sikilasma: { items: [...BOWL_BASE, 'Granola (~30 g)'], kcal: 550, protein: 17 },
+    },
     options: {
       guc: [
-        { title: 'Süt + kuruyemiş', items: '300 ml süt (veya kefir) + 30 g çiğ badem/ceviz + 1 meyve', kcal: 420, protein: 18 },
-        { title: 'Ton balıklı sandviç', items: '1 kutu ton balığı (süzülmüş) + 2 dilim tam buğday ekmek + marul, domates', kcal: 400, protein: 32 },
+        { title: 'Haşlanmış yumurta', items: '2-3 haşlanmış yumurta — protein hedefi için en kolay ekleme', kcal: 190, protein: 17 },
+        { title: 'Yumurta + peynir + ekmek', items: '2 yumurta + 40 g beyaz peynir + 1 dilim tam buğday ekmek + domates, salatalık', kcal: 320, protein: 23 },
+        { title: 'Süt ya da ayran', items: '1 büyük bardak süt veya ayran', kcal: 120, protein: 7 },
       ],
       sikilasma: [
-        { title: 'Kefir + meyve', items: '1 bardak (250 ml) kefir + 1 elma', kcal: 200, protein: 9 },
-        { title: 'Yoğurt + badem', items: '150 g yoğurt + 10 adet çiğ badem', kcal: 200, protein: 11 },
-        { title: 'Haşlanmış yumurta', items: '2 haşlanmış yumurta + salatalık/havuç dilimleri', kcal: 160, protein: 13 },
+        { title: 'Haşlanmış yumurta', items: '1 haşlanmış yumurta', kcal: 75, protein: 6 },
+        { title: 'Lor peyniri', items: '50 g lor peyniri', kcal: 50, protein: 6 },
+        { title: 'Yeşillik', items: 'Salatalık, domates, yeşillik — doyurur, kalorisi yok denecek kadar az', kcal: 30, protein: 1 },
       ],
     },
   },
   {
     key: 'ogle',
     title: 'Öğle',
-    when: '12:00-14:00',
+    when: '13:00',
     why: 'Günün ana öğünlerinden biri: protein + kompleks karbonhidrat + sebze.',
     options: {
       guc: [
@@ -94,44 +120,26 @@ export const MEAL_SLOTS: MealSlot[] = [
     },
   },
   {
-    key: 'oncesi',
-    title: 'Antrenman öncesi',
-    when: 'Antrenmandan 60-90 dk önce',
-    why: 'Karbonhidrat enerji verir, az yağ ve lif mideyi yormaz. Ağır güç antrenmanında performansı artırır.',
+    key: 'ara',
+    title: 'Ara öğün',
+    when: '16:30',
+    why: 'Uzun açlıkları önler, kas yıkımını azaltır ve akşam aşırı yemeyi engeller.',
     options: {
       guc: [
-        { title: 'Muz + yoğurt', items: '1-2 muz + 200 g yoğurt + 1 tatlı kaşığı bal', kcal: 380, protein: 13 },
-        { title: 'Pirinç patlağı', items: '3-4 pirinç patlağı + 1 yk fıstık ezmesi + 1 muz', kcal: 350, protein: 9 },
-        { title: 'Ekmek + bal + peynir', items: '2 dilim ekmek + 1 yk bal + 40 g beyaz peynir', kcal: 380, protein: 14 },
+        { title: 'Süt + kuruyemiş', items: '300 ml süt (veya kefir) + 30 g çiğ badem/ceviz + 1 meyve', kcal: 420, protein: 18 },
+        { title: 'Ton balıklı sandviç', items: '1 kutu ton balığı (süzülmüş) + 2 dilim tam buğday ekmek + marul, domates', kcal: 400, protein: 32 },
       ],
       sikilasma: [
-        { title: 'Muz', items: '1 orta boy muz (+ isteğe bağlı 1 kahve, şekersiz)', kcal: 110, protein: 1 },
-        { title: 'Pirinç patlağı + peynir', items: '2 pirinç patlağı + 30 g light peynir', kcal: 150, protein: 7 },
-        { title: 'Hurma + yoğurt', items: '2-3 hurma + 100 g yoğurt', kcal: 170, protein: 5 },
-      ],
-    },
-  },
-  {
-    key: 'sonrasi',
-    title: 'Antrenman sonrası',
-    when: 'Antrenmandan sonraki 1-2 saat',
-    why: 'Protein kas onarımını başlatır; karbonhidrat glikojen depolarını doldurur.',
-    options: {
-      guc: [
-        { title: 'Shake + muz', items: '1 ölçek whey + 300 ml süt + 1 muz + 40 g yulaf (blenderda)', kcal: 550, protein: 42 },
-        { title: 'Ayran + tavuk dürüm', items: '150 g tavuk + lavaş + yeşillik dürüm + 1 büyük ayran', kcal: 600, protein: 48 },
-      ],
-      sikilasma: [
-        { title: 'Protein shake', items: '1 ölçek whey + su veya 200 ml yarım yağlı süt', kcal: 180, protein: 28 },
-        { title: 'Yoğurt + meyve', items: '200 g süzme yoğurt + 1 avuç meyve', kcal: 200, protein: 20 },
-        { title: 'Ton balığı', items: '1 kutu ton balığı (süzülmüş) + salata + 1 dilim tam buğday ekmek', kcal: 260, protein: 30 },
+        { title: 'Kefir + meyve', items: '1 bardak (250 ml) kefir + 1 elma', kcal: 200, protein: 9 },
+        { title: 'Yoğurt + badem', items: '150 g yoğurt + 10 adet çiğ badem', kcal: 200, protein: 11 },
+        { title: 'Haşlanmış yumurta', items: '2 haşlanmış yumurta + salatalık/havuç dilimleri', kcal: 160, protein: 13 },
       ],
     },
   },
   {
     key: 'aksam',
     title: 'Akşam',
-    when: '19:00-21:00',
+    when: '19:30',
     why: 'Protein ve sebze ağırlıklı; günün kalan kalori ihtiyacına göre karbonhidrat.',
     options: {
       guc: [
@@ -167,13 +175,15 @@ export const MEAL_SLOTS: MealSlot[] = [
 export const NUTRITION_TIPS: Record<PlanKey, string[]> = {
   guc: [
     'Her öğünde bir avuç içi büyüklüğünde protein kaynağı olsun (et, tavuk, balık, yumurta, yoğurt, baklagil).',
-    'Güç antrenmanında karbonhidratı kısma: antrenman öncesi ve sonrası öğünlerde pilav, makarna, patates, ekmek, meyve.',
-    'Kilo haftada ~0,25 kg artıyorsa hedef tam yerinde; hiç artmıyorsa günlük porsiyonları biraz büyüt.',
-    'Günde en az 2,5-3 litre su; antrenman günü daha fazla.',
-    'Kreatin monohidrat (günde 3-5 g) güç gelişimi için en çok araştırılmış takviyedir.',
+    'Kahvaltı bowl’u tek başına ~16 g protein; yanına yumurta/peynir eklemek günlük 140 g hedefini çok kolaylaştırır.',
+    'Sabah aç karnına ağır setlerde güç düşerse ya da başın dönerse uyanınca küçük bir muz veya 2-3 hurma ye.',
+    'Antrenmandan sonra kahvaltıyı 1 saatten fazla geciktirme.',
+    'Kilo haftada ~0,25 kg artıyorsa hedef tam yerinde; hiç artmıyorsa öğle ve akşam porsiyonlarını biraz büyüt.',
+    'Günde en az 2,5-3 litre su; antrenman sırasında 500-750 ml yudum yudum.',
   ],
   sikilasma: [
-    'Kilo verirken kas korumak için protein en önemli kural: her öğünde protein olsun.',
+    'Kahvaltı bowl’un aynen kalıyor; kalori açığı öğle, ara öğün ve akşam porsiyonlarıyla sağlanıyor.',
+    'Kilo verirken kası korumak için protein en önemli kural: öğle ve akşamda mutlaka protein olsun.',
     'Tabağın yarısı sebze/salata, çeyreği protein, çeyreği karbonhidrat.',
     'Şekerli içecekler, meyve suları ve hamur işlerini sınırla; tatlı isteğini meyve + yoğurtla karşıla.',
     'Haftada 0,3-0,6 kg kayıp ideal; daha hızlısı kas kaybı ve yorgunluk getirir.',

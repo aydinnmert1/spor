@@ -1,83 +1,49 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, cx, Field, Input, Page, parseNum } from '../components/ui'
+import { Button, Card, Page } from '../components/ui'
+import { PEOPLE } from '../data/people'
 import { PLAN_LABELS } from '../data/programs'
-import { LOCAL_USER, save, setMeta, table } from '../lib/db'
+import { setMeta, table } from '../lib/db'
 import { supabase } from '../lib/supabase'
 import { syncNow, useSyncState } from '../lib/sync'
-import { SYNC_TABLES, type PlanKey } from '../lib/types'
-import { targetsFor, useBodyWeights, useProfile, useUid } from '../lib/user'
+import { SYNC_TABLES } from '../lib/types'
+import { useProfile, useUid } from '../lib/user'
 import { installTemplate } from '../lib/workout'
 
 export default function SettingsPage() {
   const uid = useUid()
   const profile = useProfile()
-  const weights = useBodyWeights()
   const sync = useSyncState()
   const navigate = useNavigate()
   const [email, setEmail] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [height, setHeight] = useState('')
-  const [birthYear, setBirthYear] = useState('')
-  const [saved, setSaved] = useState(false)
+  const cloud = sync.status !== 'local'
 
   useEffect(() => {
-    void supabase?.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null))
-  }, [])
-
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name)
-      setHeight(String(profile.height_cm))
-      setBirthYear(String(profile.birth_year))
-    }
-  }, [profile])
+    if (cloud) void supabase?.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null))
+  }, [cloud])
 
   if (!profile) return null
+  const other = Object.values(PEOPLE).find((p) => p.key !== uid)!
 
-  async function saveProfile() {
-    const next = {
-      ...profile!,
-      name: name.trim() || profile!.name,
-      height_cm: parseNum(height) ?? profile!.height_cm,
-      birth_year: parseNum(birthYear) ?? profile!.birth_year,
-    }
-    const w = weights?.at(-1)?.kg
-    if (w) {
-      const t = targetsFor(next, w)
-      next.kcal_target = t.kcal
-      next.protein_target = t.protein
-    }
-    await save('profiles', next)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
-  }
-
-  async function switchPlan(plan: PlanKey) {
-    const msg =
-      plan === profile!.plan_key
-        ? 'Program şablondan yeniden yüklensin mi? Programda yaptığın değişiklikler sıfırlanır (geçmiş antrenmanların silinmez).'
-        : `"${PLAN_LABELS[plan].title}" programına geçilsin mi? Mevcut programın pasif olur, geçmişin korunur.`
-    if (!confirm(msg)) return
-    await installTemplate(plan)
-    const w = weights?.at(-1)?.kg
-    const next = { ...profile!, plan_key: plan }
-    if (w) {
-      const t = targetsFor(next, w)
-      next.kcal_target = t.kcal
-      next.protein_target = t.protein
-    }
-    await save('profiles', next)
+  async function resetProgram() {
+    if (!confirm('Program şablondan yeniden yüklensin mi? Programda yaptığın değişiklikler sıfırlanır; geçmiş antrenmanların silinmez.')) return
+    await installTemplate(profile!.plan_key)
     navigate('/program')
   }
 
+  async function switchPerson() {
+    if (!confirm(`Bu telefonda ${other.name} olarak devam edilsin mi? ${profile!.name} kayıtları silinmez.`)) return
+    await setMeta('person', null)
+    location.reload()
+  }
+
   async function exportData() {
-    const dump: Record<string, unknown> = { exported_at: new Date().toISOString() }
+    const dump: Record<string, unknown> = { person: uid, exported_at: new Date().toISOString() }
     for (const name of SYNC_TABLES) dump[name] = (await table(name).where('user_id').equals(uid).toArray()).filter((r) => !r.deleted)
     const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `spor-yedek-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `spor-${uid}-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(a.href)
   }
@@ -107,58 +73,27 @@ export default function SettingsPage() {
     >
       <div className="space-y-4">
         <Card>
-          <h3 className="mb-3 font-semibold text-white">Profil</h3>
-          <div className="space-y-3">
-            <Field label="Ad">
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Boy (cm)">
-                <Input value={height} onChange={(e) => setHeight(e.target.value)} inputMode="decimal" />
-              </Field>
-              <Field label="Doğum yılı">
-                <Input value={birthYear} onChange={(e) => setBirthYear(e.target.value)} inputMode="numeric" />
-              </Field>
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-700 text-xl font-bold text-white">{profile.name[0]}</span>
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-white">{profile.name}</div>
+              <div className="text-xs text-slate-400">{PLAN_LABELS[profile.plan_key].title}</div>
             </div>
-            <Button className="w-full" onClick={saveProfile}>
-              {saved ? 'Kaydedildi ✓' : 'Kaydet'}
-            </Button>
           </div>
+          <Button variant="secondary" className="mt-4 w-full" onClick={switchPerson}>
+            {other.name} olarak devam et
+          </Button>
         </Card>
 
         <Card>
           <h3 className="mb-1 font-semibold text-white">Program</h3>
-          <p className="mb-3 text-xs text-slate-400">Seçili plan programı ve beslenme hedeflerini belirler.</p>
-          <div className="space-y-2">
-            {(Object.keys(PLAN_LABELS) as PlanKey[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => switchPlan(key)}
-                className={cx(
-                  'w-full rounded-xl border p-3 text-left',
-                  profile.plan_key === key ? 'border-accent bg-emerald-500/10' : 'border-white/10',
-                )}
-              >
-                <div className="font-semibold text-white">
-                  {PLAN_LABELS[key].title}
-                  {profile.plan_key === key && <span className="ml-2 text-xs text-emerald-300">seçili · dokun: sıfırla</span>}
-                </div>
-                <div className="mt-0.5 text-xs text-slate-400">{PLAN_LABELS[key].summary}</div>
-              </button>
-            ))}
-          </div>
+          <p className="mb-3 text-xs text-slate-400">{PLAN_LABELS[profile.plan_key].summary}</p>
+          <Button variant="secondary" className="w-full" onClick={resetProgram}>Programı şablondan sıfırla</Button>
         </Card>
 
         <Card>
-          <h3 className="mb-2 font-semibold text-white">Hesap ve eşitleme</h3>
-          {uid === LOCAL_USER ? (
-            <>
-              <p className="mb-3 text-sm text-slate-400">
-                Hesapsız kullanıyorsun; veriler yalnızca bu telefonda. {supabase ? 'Hesaba bağlanınca mevcut verilerin hesabına taşınır.' : ''}
-              </p>
-              {supabase && <Button variant="secondary" className="w-full" onClick={connectAccount}>Hesaba bağlan</Button>}
-            </>
-          ) : (
+          <h3 className="mb-2 font-semibold text-white">Bulut ve eşitleme</h3>
+          {cloud ? (
             <>
               <p className="text-sm text-slate-300">{email}</p>
               <p className="mb-3 mt-1 text-xs text-slate-500">
@@ -167,9 +102,17 @@ export default function SettingsPage() {
                 {sync.lastSync && `Son eşitleme ${new Date(sync.lastSync).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}.`}
               </p>
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => syncNow(supabase, uid)}>Şimdi eşitle</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => syncNow(supabase)}>Şimdi eşitle</Button>
                 <Button variant="danger" onClick={signOut}>Çıkış</Button>
               </div>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-sm text-slate-400">
+                Veriler yalnızca bu telefonda.{' '}
+                {supabase ? 'Hesaba bağlanınca mevcut kayıtların buluta taşınır.' : 'Bulut henüz kurulmadı.'}
+              </p>
+              {supabase && <Button variant="secondary" className="w-full" onClick={connectAccount}>Hesaba bağlan</Button>}
             </>
           )}
         </Card>

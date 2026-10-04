@@ -64,22 +64,24 @@ export async function mergeRemote(name: TableName, remote: Row): Promise<boolean
   return true
 }
 
-/** Download rows changed on the server since the last pull. */
-export async function pull(client: SupabaseClient, uid: string): Promise<void> {
+/**
+ * Download rows changed on the server since the last pull. The account is
+ * shared by both people, so this fetches both; screens filter by person.
+ */
+export async function pull(client: SupabaseClient): Promise<void> {
   for (const name of SYNC_TABLES) {
-    const metaKey = `pull:${uid}:${name}`
+    const metaKey = `pull:${name}`
     let since = (await getMeta<string>(metaKey)) ?? '1970-01-01T00:00:00Z'
     for (;;) {
       const { data, error } = await client
         .from(name)
         .select('*')
-        .eq('user_id', uid)
         .gt('updated_at', since)
         .order('updated_at')
         .limit(PAGE)
       if (error) throw new Error(`${name}: ${error.message}`)
       if (!data || data.length === 0) break
-      for (const row of data as Row[]) await mergeRemote(name, row)
+      for (const { owner: _owner, ...row } of data as (Row & { owner?: string })[]) await mergeRemote(name, row)
       since = (data[data.length - 1] as Row).updated_at
       await setMeta(metaKey, since)
       if (data.length < PAGE) break
@@ -87,7 +89,7 @@ export async function pull(client: SupabaseClient, uid: string): Promise<void> {
   }
 }
 
-/** After first sign-in, hand rows created in local mode over to the account and queue them. */
+/** Hand rows created before a person was chosen (older app versions) over to that person and queue them. */
 export async function adoptLocalData(uid: string): Promise<number> {
   let count = 0
   await db.transaction('rw', [...SYNC_TABLES.map((n) => db.table(n)), db.outbox], async () => {
@@ -111,8 +113,9 @@ export async function adoptLocalData(uid: string): Promise<number> {
 
 let running: Promise<void> | null = null
 
-export async function syncNow(client: SupabaseClient | null, uid: string): Promise<void> {
-  if (!client || uid === LOCAL_USER) {
+/** `client` is null when there is no cloud project or no signed-in account. */
+export async function syncNow(client: SupabaseClient | null): Promise<void> {
+  if (!client) {
     setState({ status: 'local', pending: await db.outbox.count() })
     return
   }
@@ -125,7 +128,7 @@ export async function syncNow(client: SupabaseClient | null, uid: string): Promi
     setState({ status: 'syncing' })
     try {
       await pushOutbox(client)
-      await pull(client, uid)
+      await pull(client)
       setState({ status: 'idle', lastSync: new Date().toISOString(), error: null, pending: await db.outbox.count() })
     } catch (e) {
       setState({ status: 'error', error: e instanceof Error ? e.message : String(e), pending: await db.outbox.count() })
@@ -137,13 +140,13 @@ export async function syncNow(client: SupabaseClient | null, uid: string): Promi
 }
 
 /** Keep syncing in the background: on local writes (debounced), when back online, and every minute. */
-export function startSyncLoop(client: SupabaseClient | null, uid: string): () => void {
+export function startSyncLoop(client: SupabaseClient | null): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined
   const soon = () => {
     clearTimeout(timer)
-    timer = setTimeout(() => void syncNow(client, uid), 1500)
+    timer = setTimeout(() => void syncNow(client), 1500)
   }
-  const now = () => void syncNow(client, uid)
+  const now = () => void syncNow(client)
   const offWrite = onLocalWrite(soon)
   window.addEventListener('online', now)
   document.addEventListener('visibilitychange', now)

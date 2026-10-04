@@ -39,7 +39,7 @@ export default function Login({ onLocal }: { onLocal: () => void }) {
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-strong text-3xl">🏋️</div>
         <h1 className="text-3xl font-bold text-white">Spor Takip</h1>
-        <p className="mt-2 text-sm text-slate-400">Programın, setlerin ve ilerlemen her cihazda seninle.</p>
+        <p className="mt-2 text-sm text-slate-400">Ortak aile hesabıyla giriş yapın. Mert ve Simge aynı hesabı kullanır; kayıtlar yine kişiye özel kalır.</p>
       </div>
       <Segmented
         value={mode}
@@ -71,7 +71,7 @@ export default function Login({ onLocal }: { onLocal: () => void }) {
         </Button>
       </form>
       <button onClick={useLocal} className="mt-8 text-sm text-slate-500 underline underline-offset-4">
-        Hesapsız devam et (veriler sadece bu telefonda kalır)
+        Hesapsız devam et (veriler yalnızca bu telefonda kalır)
       </button>
     </div>
   )

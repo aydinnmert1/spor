@@ -2,15 +2,17 @@ import type { Session as AuthSession } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { cx } from './components/ui'
-import { getMeta, LOCAL_USER, setMeta } from './lib/db'
+import { isPersonKey, type PersonKey } from './data/people'
+import { getMeta, setMeta } from './lib/db'
 import { supabase } from './lib/supabase'
 import { adoptLocalData, startSyncLoop, syncNow } from './lib/sync'
 import { UidContext, useProfile } from './lib/user'
+import { ensurePerson } from './lib/workout'
 import ExerciseDetailPage from './pages/ExerciseDetailPage'
 import ExercisesPage from './pages/ExercisesPage'
 import Login from './pages/Login'
 import NutritionPage from './pages/NutritionPage'
-import Onboarding from './pages/Onboarding'
+import PersonPicker from './pages/PersonPicker'
 import ProgramPage from './pages/ProgramPage'
 import ProgressPage from './pages/ProgressPage'
 import SessionDetailPage from './pages/SessionDetailPage'
@@ -18,28 +20,28 @@ import SessionPage from './pages/SessionPage'
 import SettingsPage from './pages/SettingsPage'
 import TodayPage from './pages/TodayPage'
 
-type Boot = { kind: 'loading' } | { kind: 'login' } | { kind: 'ready'; uid: string }
+type Boot =
+  | { kind: 'loading' }
+  | { kind: 'login' }
+  | { kind: 'pick'; cloud: boolean }
+  | { kind: 'ready'; person: PersonKey; cloud: boolean }
 
 export default function App() {
   const [boot, setBoot] = useState<Boot>({ kind: 'loading' })
 
   useEffect(() => {
+    const choosePerson = async (cloud: boolean) => {
+      const person = await getMeta<string>('person')
+      setBoot(isPersonKey(person) ? { kind: 'ready', person, cloud } : { kind: 'pick', cloud })
+    }
     if (!supabase) {
-      void setMeta('uid', LOCAL_USER).then(() => setBoot({ kind: 'ready', uid: LOCAL_USER }))
+      void choosePerson(false)
       return
     }
     const resolve = async (session: AuthSession | null) => {
-      if (session) {
-        const uid = session.user.id
-        await setMeta('uid', uid)
-        await adoptLocalData(uid)
-        setBoot({ kind: 'ready', uid })
-      } else if (await getMeta<boolean>('localMode')) {
-        await setMeta('uid', LOCAL_USER)
-        setBoot({ kind: 'ready', uid: LOCAL_USER })
-      } else {
-        setBoot({ kind: 'login' })
-      }
+      if (session) await choosePerson(true)
+      else if (await getMeta<boolean>('localMode')) await choosePerson(false)
+      else setBoot({ kind: 'login' })
     }
     // Supabase advises not to await other work inside the auth callback.
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -49,10 +51,20 @@ export default function App() {
   }, [])
 
   if (boot.kind === 'loading') return <Splash />
-  if (boot.kind === 'login') return <Login onLocal={() => setBoot({ kind: 'ready', uid: LOCAL_USER })} />
+  if (boot.kind === 'login') return <Login onLocal={() => setBoot({ kind: 'pick', cloud: false })} />
+  if (boot.kind === 'pick') {
+    return (
+      <PersonPicker
+        onPick={async (person) => {
+          await setMeta('person', person)
+          setBoot({ kind: 'ready', person, cloud: boot.cloud })
+        }}
+      />
+    )
+  }
   return (
-    <UidContext.Provider value={boot.uid}>
-      <Ready uid={boot.uid} />
+    <UidContext.Provider value={boot.person}>
+      <Ready person={boot.person} cloud={boot.cloud} />
     </UidContext.Provider>
   )
 }
@@ -65,19 +77,37 @@ function Splash() {
   )
 }
 
-function Ready({ uid }: { uid: string }) {
+const preparing = new Map<string, Promise<void>>()
+
+/** Runs once per person per app load, even if the effect fires twice. */
+function preparePerson(person: PersonKey, client: typeof supabase): Promise<void> {
+  if (!preparing.has(person)) {
+    preparing.set(
+      person,
+      (async () => {
+        await setMeta('uid', person)
+        // Download first so an existing account is not mistaken for a new person.
+        await syncNow(client)
+        await adoptLocalData(person)
+        await ensurePerson(person)
+      })(),
+    )
+  }
+  return preparing.get(person)!
+}
+
+function Ready({ person, cloud }: { person: PersonKey; cloud: boolean }) {
   const profile = useProfile()
-  const [firstSync, setFirstSync] = useState(uid === LOCAL_USER)
+  const [prepared, setPrepared] = useState(false)
 
   useEffect(() => {
-    const stop = startSyncLoop(supabase, uid)
-    void syncNow(supabase, uid).finally(() => setFirstSync(true))
+    const client = cloud ? supabase : null
+    const stop = startSyncLoop(client)
+    void preparePerson(person, client).then(() => setPrepared(true))
     return stop
-  }, [uid])
+  }, [person, cloud])
 
-  // Wait for the first download before deciding the account is new.
-  if (profile === undefined || (profile === null && !firstSync)) return <Splash />
-  if (profile === null) return <Onboarding />
+  if (!prepared || !profile) return <Splash />
   return <Shell />
 }
 
