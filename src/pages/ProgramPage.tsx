@@ -1,17 +1,21 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ExerciseList } from '../components/ExercisePicker'
 import { BLOCK_LABEL, Button, Card, cx, Empty, Field, Input, Page, parseNum, Segmented, Sheet } from '../components/ui'
 import { save, remove } from '../lib/db'
 import { exerciseName, useExercises } from '../lib/exercises'
 import type { Block, ProgramDay, ProgramItem } from '../lib/types'
-import { useUid } from '../lib/user'
-import { activeProgram, dayItems, formatDuration, programDays, repRange } from '../lib/workout'
+import { useProfile, useUid } from '../lib/user'
+import { activeProgram, dayItems, estimateMinutes, formatDuration, openSession, programDays, repRange, startSession } from '../lib/workout'
+import { PLAN_LABELS } from '../data/programs'
 
 const WEEKDAY_NAMES = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']
 
 export default function ProgramPage() {
   const uid = useUid()
+  const profile = useProfile()
+  const navigate = useNavigate()
   const exercises = useExercises()
   const [open, setOpen] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<ProgramItem | null>(null)
@@ -50,6 +54,7 @@ export default function ProgramPage() {
       rep_max: cardio ? 1 : 12,
       rest_sec: cardio ? 0 : 90,
       duration_min: cardio ? 15 : null,
+      per_side: false,
       note: '',
     })
     setAddingTo(null)
@@ -58,9 +63,22 @@ export default function ProgramPage() {
 
   const program = data.program
 
+  async function begin(day: ProgramDay) {
+    const open = await openSession(uid)
+    if (open && !confirm(`Açık bir antrenman var: "${open.day_name}". Yenisini başlatmadan önce onu bitirmelisin. Şimdi ona gidilsin mi?`)) return
+    const s = open ?? (await startSession(day))
+    navigate(`/seans/${s.id}`)
+  }
+
   return (
     <Page title={program.name}>
-      <p className="mb-4 text-sm text-slate-400">Bir güne dokunarak hareketleri gör; harekete dokunarak set, tekrar ve dinlenmeyi değiştir.</p>
+      <p className="mb-3 text-sm text-slate-400">Bir güne dokunarak hareketleri gör ve o antrenmanı istediğin gün başlat; harekete dokunarak set, tekrar ve dinlenmeyi değiştir.</p>
+      {profile && (
+        <Card className="mb-4">
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Nasıl ilerlerim?</div>
+          <p className="text-sm text-slate-300">{PLAN_LABELS[profile.plan_key].progression}</p>
+        </Card>
+      )}
       <div className="space-y-3">
         {data.days.map(({ day, items }) => {
           const isOpen = open === day.id
@@ -70,7 +88,8 @@ export default function ProgramPage() {
                 <div>
                   <div className="font-semibold text-white">{day.name}</div>
                   <div className="text-xs text-slate-400">
-                    {items.length} hareket{day.optional && ' · isteğe bağlı'}
+                    {items.length} hareket{profile && ` · ≈ ${estimateMinutes(items, profile.plan_key)} dk`}
+                    {day.optional && ' · isteğe bağlı'}
                   </div>
                 </div>
                 <span className="text-slate-500">{isOpen ? '▾' : '▸'}</span>
@@ -94,7 +113,8 @@ export default function ProgramPage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-3 flex gap-2">
+                  <Button className="mt-3 w-full" onClick={() => begin(day)}>Bu antrenmanı şimdi başlat</Button>
+                  <div className="mt-2 flex gap-2">
                     <Button variant="secondary" className="flex-1 text-sm" onClick={() => setAddingTo(day)}>+ Hareket</Button>
                     <Button variant="ghost" className="text-sm" onClick={() => setEditingDay(day)}>Günü düzenle</Button>
                   </div>

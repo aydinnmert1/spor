@@ -1,8 +1,8 @@
 import { calcTargets } from '../data/nutrition'
 import { PEOPLE, type PersonKey } from '../data/people'
-import { PROGRAM_NAME, TEMPLATE } from '../data/programs'
+import { PROGRAM_NAME, TEMPLATE, TEMPLATE_VERSION } from '../data/programs'
 import { alive, currentUserId, db, save } from './db'
-import type { PlanKey, Program, ProgramDay, ProgramItem, Session, SetLog } from './types'
+import type { Block, PlanKey, Program, ProgramDay, ProgramItem, Session, SetLog } from './types'
 
 /** Epley estimate of the one-rep max. */
 export function e1rm(weight: number, reps: number): number {
@@ -21,13 +21,46 @@ export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+export interface Timed {
+  block: Block
+  sets: number
+  rest_sec: number
+  duration_min: number | null
+  per_side: boolean
+}
+
+/**
+ * Conservative session length in minutes: 5 min general warm-up on lifting
+ * days, ramp-up sets before each main lift (first one longer), ~45 s per set
+ * (double for per-side sets), rest between sets and 75 s to change stations.
+ */
+export function estimateMinutes(items: Timed[], plan: PlanKey): number {
+  let sec = 0
+  let mains = 0
+  let lifting = false
+  for (const it of items) {
+    if (it.block === 'cardio') {
+      sec += (it.duration_min ?? 0) * 60 + 60
+      continue
+    }
+    lifting = true
+    if (it.block === 'main') {
+      const first = mains++ === 0
+      sec += (plan === 'guc' ? (first ? 5 : 3) : first ? 3 : 2) * 60
+    }
+    sec += it.sets * (it.per_side ? 80 : 45) + Math.max(0, it.sets - 1) * it.rest_sec + 75
+  }
+  if (lifting) sec += 5 * 60
+  return Math.ceil(sec / 60)
+}
+
 /** Create the user's program from the shared template, using their plan's doses. */
 export async function installTemplate(plan: PlanKey): Promise<Program> {
   const uid = await currentUserId()
   for (const p of alive(await db.programs.where('user_id').equals(uid).toArray())) {
     if (p.active) await save('programs', { ...p, active: false })
   }
-  const program = await save('programs', { name: PROGRAM_NAME[plan], active: true })
+  const program = await save('programs', { name: PROGRAM_NAME[plan], active: true, template_version: TEMPLATE_VERSION })
   let dayPos = 0
   for (const t of TEMPLATE) {
     const day = await save('program_days', {
@@ -35,24 +68,25 @@ export async function installTemplate(plan: PlanKey): Promise<Program> {
       position: dayPos++,
       name: t.name,
       weekday: t.weekday,
-      optional: !!t.optional,
+      optional: !!t.optional?.[plan],
     })
     let pos = 0
     for (const item of t.items) {
       const dose = item[plan]
       if (!dose) continue
       const [sets, rep_min, rep_max, rest_sec] = dose
-      const note = [item.note, plan === 'sikilasma' ? item.noteSikilasma : undefined].filter(Boolean).join(' ')
+      const note = [item.note, item.noteFor?.[plan]].filter(Boolean).join(' ')
       await save('program_items', {
         day_id: day.id,
         position: pos++,
-        exercise_id: item.exercise,
+        exercise_id: item.exerciseFor?.[plan] ?? item.exercise,
         block: item.block,
         sets,
         rep_min,
         rep_max,
         rest_sec,
         duration_min: item.minutes?.[plan] ?? null,
+        per_side: !!item.perSide,
         note,
       })
     }
@@ -66,7 +100,9 @@ export async function installTemplate(plan: PlanKey): Promise<Program> {
  */
 export async function ensurePerson(key: PersonKey): Promise<void> {
   const person = PEOPLE[key]
-  if (!(await activeProgram(key))) await installTemplate(person.plan)
+  const active = await activeProgram(key)
+  // A newer template replaces the active program; history stays untouched.
+  if (!active || (active.template_version ?? 1) < TEMPLATE_VERSION) await installTemplate(person.plan)
   const weights = alive(await db.body_weights.where('user_id').equals(key).toArray()).sort((a, b) => a.date.localeCompare(b.date))
   if (weights.length === 0) await save('body_weights', { date: localDate(), kg: person.start_weight_kg })
   const weight = weights.at(-1)?.kg ?? person.start_weight_kg
@@ -101,6 +137,43 @@ export async function programDays(programId: string): Promise<ProgramDay[]> {
 
 export async function dayItems(dayId: string): Promise<ProgramItem[]> {
   return alive(await db.program_items.where('day_id').equals(dayId).toArray()).sort((a, b) => a.position - b.position)
+}
+
+export type DayStatus = 'done' | 'today' | 'missed' | 'skipped' | 'upcoming' | 'unscheduled' | 'before-start'
+
+/** Monday 00:00 of the week containing `now`. */
+export function weekStart(now = new Date()): Date {
+  const d = new Date(now)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - (isoWeekday(d) - 1))
+  return d
+}
+
+/**
+ * Status of each program day this week. A day counts as done when a finished
+ * session of that day started this week, on any weekday, so a workout made up
+ * on another day still ticks off the day it belongs to. Days before
+ * `programStart` (the day the program was installed) are not counted as missed.
+ */
+export function weekStatus(days: ProgramDay[], sessions: Session[], now = new Date(), programStart?: Date): Map<string, DayStatus> {
+  const start = weekStart(now).getTime()
+  const firstDay = programStart ? new Date(programStart).setHours(0, 0, 0, 0) : -Infinity
+  const today = isoWeekday(now)
+  const done = new Set(
+    sessions.filter((s) => !s.deleted && s.ended_at && s.program_day_id && Date.parse(s.started_at) >= start).map((s) => s.program_day_id),
+  )
+  const out = new Map<string, DayStatus>()
+  for (const d of days) {
+    if (done.has(d.id)) out.set(d.id, 'done')
+    else if (d.weekday === null) out.set(d.id, 'unscheduled')
+    else if (d.weekday === today) out.set(d.id, 'today')
+    else if (d.weekday < today) {
+      const date = start + (d.weekday - 1) * 86_400_000
+      out.set(d.id, date < firstDay ? 'before-start' : d.optional ? 'skipped' : 'missed')
+    }
+    else out.set(d.id, 'upcoming')
+  }
+  return out
 }
 
 export async function startSession(day: ProgramDay | null): Promise<Session> {

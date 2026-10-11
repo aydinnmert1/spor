@@ -26,7 +26,8 @@ create table if not exists programs (
   updated_at timestamptz not null default now(),
   deleted boolean not null default false,
   name text not null,
-  active boolean not null default true
+  active boolean not null default true,
+  template_version integer
 );
 
 create table if not exists program_days (
@@ -57,6 +58,7 @@ create table if not exists program_items (
   rep_max integer not null,
   rest_sec integer not null,
   duration_min double precision,
+  per_side boolean not null default false,
   note text not null default ''
 );
 

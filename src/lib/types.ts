@@ -23,6 +23,8 @@ export interface Profile extends Row {
 export interface Program extends Row {
   name: string
   active: boolean
+  /** Template version it was installed from (null for programs from older app versions). */
+  template_version: number | null
 }
 
 export interface ProgramDay extends Row {
@@ -47,6 +49,8 @@ export interface ProgramItem extends Row {
   rest_sec: number
   /** Cardio items: target minutes */
   duration_min: number | null
+  /** Reps count per leg/arm */
+  per_side: boolean
   note: string
 }
 

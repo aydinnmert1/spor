@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { calcTargets } from '../data/nutrition'
-import { TEMPLATE } from '../data/programs'
+import { TEMPLATE, TEMPLATE_VERSION } from '../data/programs'
 import { db, LOCAL_USER, remove, save, setMeta } from './db'
 import { adoptLocalData, mergeRemote } from './sync'
 import type { SetLog } from './types'
-import { bestOf, dayItems, e1rm, ensurePerson, findPRs, installTemplate, isoWeekday, previousSets, programDays, progressSeries } from './workout'
+import { bestOf, dayItems, e1rm, ensurePerson, estimateMinutes, weekStatus, findPRs, installTemplate, isoWeekday, previousSets, programDays, progressSeries } from './workout'
 
 function set(partial: Partial<SetLog>): SetLog {
   return {
@@ -55,24 +55,52 @@ describe('calcTargets', () => {
 })
 
 describe('installTemplate', () => {
-  it('builds the same days for both plans, with cardio only where the plan has it', async () => {
+  it('builds the same upper/lower week for both plans with per-plan stations and doses', async () => {
     const strength = await installTemplate('guc')
+    expect(strength.template_version).toBe(TEMPLATE_VERSION)
     const sDays = await programDays(strength.id)
-    expect(sDays.map((d) => d.weekday)).toEqual(TEMPLATE.map((t) => t.weekday))
+    expect(sDays.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(sDays.map((d) => d.optional)).toEqual([false, false, false, false, false, false, true])
     const monday = await dayItems(sDays[0].id)
     expect(monday.find((i) => i.block === 'cardio')).toBeUndefined()
-    expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Squat', sets: 5, rep_min: 3, rep_max: 5 })
+    expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 4, rep_min: 4, rep_max: 6 })
+    expect(monday[2].exercise_id).toBe('Standing_Military_Press')
 
     const toning = await installTemplate('sikilasma')
     const tDays = await programDays(toning.id)
+    expect(tDays.every((d) => !d.optional)).toBe(true)
     const tMonday = await dayItems(tDays[0].id)
-    expect(tMonday[0]).toMatchObject({ exercise_id: 'Barbell_Squat', sets: 3, rep_min: 8 })
+    expect(tMonday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 3, rep_min: 10 })
+    expect(tMonday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
     expect(tMonday.at(-1)).toMatchObject({ block: 'cardio', duration_min: 15 })
+    const tTuesday = await dayItems(tDays[1].id)
+    expect(tTuesday.find((i) => i.exercise_id === 'Split_Squat_with_Dumbbells')?.per_side).toBe(true)
 
     // Only the newest program stays active.
     const programs = await db.programs.toArray()
     expect(programs.filter((p) => p.active).map((p) => p.id)).toEqual([toning.id])
   })
+})
+
+describe('session length', () => {
+  for (const plan of ['guc', 'sikilasma'] as const) {
+    it(`keeps every ${plan} session within 60 minutes`, () => {
+      for (const day of TEMPLATE) {
+        const items = day.items
+          .filter((i) => i[plan])
+          .map((i) => ({
+            block: i.block,
+            sets: i[plan]![0],
+            rest_sec: i[plan]![3],
+            duration_min: i.minutes?.[plan] ?? null,
+            per_side: !!i.perSide,
+          }))
+        const min = estimateMinutes(items, plan)
+        expect(min, `${plan} · ${day.name}: ${min} dk`).toBeLessThanOrEqual(60)
+        expect(min).toBeGreaterThanOrEqual(30)
+      }
+    })
+  }
 })
 
 describe('ensurePerson', () => {
@@ -89,6 +117,59 @@ describe('ensurePerson', () => {
     await ensurePerson('mert')
     expect(await db.profiles.get('mert')).toMatchObject({ user_id: 'mert', plan_key: 'guc', kcal_target: 2750 })
     expect(await db.programs.where('user_id').equals('simge').count()).toBe(1)
+  })
+})
+
+describe('template upgrade', () => {
+  it('replaces an older active program with the current template and keeps it after that', async () => {
+    await setMeta('uid', 'mert')
+    const old = await save('programs', { name: 'Güç Programı', active: true, template_version: null })
+    await ensurePerson('mert')
+    const programs = await db.programs.where('user_id').equals('mert').toArray()
+    const active = programs.filter((p) => p.active)
+    expect(active).toHaveLength(1)
+    expect(active[0].template_version).toBe(TEMPLATE_VERSION)
+    expect(programs.find((p) => p.id === old.id)?.active).toBe(false)
+
+    await ensurePerson('mert')
+    expect(await db.programs.where('user_id').equals('mert').count()).toBe(2)
+  })
+})
+
+describe('weekStatus', () => {
+  const day = (id: string, weekday: number, optional = false) =>
+    ({ id, user_id: 'mert', updated_at: '', program_id: 'p', position: weekday, name: id, weekday, optional }) as const
+  const session = (dayId: string, startedAt: string) =>
+    ({ id: crypto.randomUUID(), user_id: 'mert', updated_at: '', program_day_id: dayId, day_name: dayId, started_at: startedAt, ended_at: startedAt, note: '' }) as const
+
+  it('marks missed days and credits a make-up session to the day it belongs to', () => {
+    const days = [day('mon', 1), day('tue', 2), day('wed', 3), day('thu', 4), day('sun', 7, true)]
+    // Thursday 2026-10-15; Monday done on Monday, Tuesday made up on Wednesday.
+    const now = new Date(2026, 9, 15, 10, 0)
+    const sessions = [session('mon', new Date(2026, 9, 12, 8).toISOString()), session('tue', new Date(2026, 9, 14, 8).toISOString())]
+    const st = weekStatus(days, sessions, now)
+    expect(st.get('mon')).toBe('done')
+    expect(st.get('tue')).toBe('done')
+    expect(st.get('wed')).toBe('missed')
+    expect(st.get('thu')).toBe('today')
+    expect(st.get('sun')).toBe('upcoming')
+  })
+
+  it('does not count days before the program started as missed', () => {
+    const days = [day('mon', 1), day('tue', 2), day('wed', 3)]
+    const now = new Date(2026, 9, 15, 10, 0)
+    const st = weekStatus(days, [], now, new Date(2026, 9, 13, 20, 0))
+    expect(st.get('mon')).toBe('before-start')
+    expect(st.get('tue')).toBe('missed')
+    expect(st.get('wed')).toBe('missed')
+  })
+
+  it('ignores sessions from last week and unfinished ones', () => {
+    const days = [day('mon', 1)]
+    const now = new Date(2026, 9, 15, 10, 0)
+    const lastWeek = session('mon', new Date(2026, 9, 5, 8).toISOString())
+    const open = { ...session('mon', new Date(2026, 9, 12, 8).toISOString()), ended_at: null }
+    expect(weekStatus(days, [lastWeek, open], now).get('mon')).toBe('missed')
   })
 })
 

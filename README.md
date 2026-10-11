@@ -3,7 +3,7 @@
 Mert ve Simge için; iPhone ve Android'de çalışan, ana ekrana eklenebilen (PWA) antrenman takip uygulaması. Açılışta yalnızca kişi seçilir (Mert / Simge); her kayıt o kişiye özeldir.
 
 - **Canlı antrenman modu:** program günü sırayla açılır; her set için kilo/tekrar girilir, önceki antrenmanın kiloları görünür, setler arası dinlenme sayacı çalışır (sesli uyarı, ekran kapanmaz).
-- **Program:** güç odaklı ve kilo verme/sıkılaşma olmak üzere iki plan; aynı günler ve hareketler, plana göre farklı set/tekrar/dinlenme ve kardiyo. Uygulama içinden düzenlenebilir.
+- **Program (Upper/Lower):** Pzt Upper A · Sal Lower A · Per Upper B · Cum Lower B, Çar/Cmt/Paz kardiyo. Aynı günler ve istasyonlar; Mert için güç, Simge için sıkılaşma protokolü. Her seans ≤ 60 dk (testle doğrulanır). Herhangi bir günün antrenmanı başka bir gün başlatılabilir; kaçırılan antrenmanlar ana ekranda görünür. Uygulama içinden düzenlenebilir.
 - **Hareket kütüphanesi:** ~870 hareket, adım adım görseller ve talimatlar ([free-exercise-db](https://github.com/yuhonas/free-exercise-db), public domain). Programdaki hareketlerin Türkçe anlatımı var; her harekete kendi YouTube linkini ve notunu ekleyebilirsin.
 - **İlerleme:** hareket bazlı grafik (tahmini 1RM, en ağır set, hacim), kişisel rekorlar, vücut ağırlığı, vücut ölçüleri, antrenman takvimi ve geçmişi.
 - **Beslenme:** kişiye göre günlük kalori/makro hedefi; sabah sporu (07:30 kalk, 08:00-09:00 spor) ve sabit kahvaltı bowl'una göre öğün önerileri. Takviye önerilmez, kayıt tutulmaz.

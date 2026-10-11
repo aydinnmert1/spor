@@ -48,3 +48,11 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 - **Identity:** no sign-up form. First launch asks "Mert or Simge"; profile data (sex, age, height, start weight, plan) is built in (`src/data/people.ts`). `user_id` on every row is the person key, so each person sees only their own records. A settings button switches the phone to the other person.
 - **Cloud:** one shared family Supabase account; RLS on a new `owner` column (auth uid), `user_id` is the person key (text). Pull fetches the whole account; screens filter by person. All ids are text.
 - **Nutrition:** weekday flow 07:30 wake → 08:00–09:00 gym → 09:30 breakfast. Breakfast is the fixed bowl (yogurt, banana, blueberries, tahini, almonds; + baby biscuits for Mert, + granola for Simge) shown as-is with optional additions only, never reductions. No supplements anywhere.
+
+## Update 2026-10-11 — Upper/Lower v2
+
+- **Week:** Mon Upper A (bench) · Tue Lower A (squat) · Wed cardio · Thu Upper B (incline press + pull) · Fri Lower B (deadlift) · Sat cardio · Sun cardio (optional for Mert).
+- **Changes vs. the pasted plan:** Mert's bench and squat now run twice a week (incline barbell bench Thu, front squat Fri); Simge gets per-plan stations (DB shoulder press, assisted pull-up, hip thrust on Fri) and a 12–15 min cardio finisher on lifting days; face pulls added for shoulder health; Wednesday is cardio instead of rest; supersets have 0 s rest on the first exercise.
+- **60-minute cap:** `estimateMinutes` (warm-up, ramp-up sets, ~45 s/set, 80 s per-side sets, rests, 75 s station change) is unit-tested for every day and both plans. Current estimates: Mert 52–58 min, Simge 58–59 min on lifting days.
+- **Rollout:** `TEMPLATE_VERSION = 2`; `ensurePerson` replaces an active program with an older version on next launch. History is kept.
+- **Make-up workouts:** Today shows the whole week (tap any day to start it). `weekStatus` credits a finished session to its program day regardless of the weekday it was done; non-optional past days without one are "missed" (days before the program was installed are not).

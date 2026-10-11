@@ -16,7 +16,7 @@ export function Page({ title, action, children }: { title: string; action?: Reac
   )
 }
 
-type Tone = 'default' | 'accent' | 'done'
+type Tone = 'default' | 'accent' | 'done' | 'warn'
 
 export function Card({
   children,
@@ -37,6 +37,7 @@ export function Card({
         tone === 'default' && 'border-white/5 bg-slate-800/60',
         tone === 'accent' && 'border-accent/60 bg-emerald-500/10',
         tone === 'done' && 'border-accent/30 bg-slate-800/60',
+        tone === 'warn' && 'border-amber-400/40 bg-amber-500/5',
         onClick && 'cursor-pointer active:brightness-125',
         className,
       )}

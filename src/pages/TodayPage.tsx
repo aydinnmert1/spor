@@ -7,9 +7,32 @@ import { alive, db } from '../lib/db'
 import { exerciseName, useExercises } from '../lib/exercises'
 import type { ProgramDay } from '../lib/types'
 import { useBodyWeights, useProfile, useUid } from '../lib/user'
-import { activeProgram, dayItems, formatKg, isoWeekday, localDate, openSession, programDays, repRange, startSession } from '../lib/workout'
+import {
+  activeProgram,
+  dayItems,
+  estimateMinutes,
+  formatKg,
+  isoWeekday,
+  localDate,
+  openSession,
+  programDays,
+  repRange,
+  startSession,
+  weekStatus,
+  type DayStatus,
+} from '../lib/workout'
 
 const WEEKDAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+
+const STATUS_LABEL: Record<DayStatus, string> = {
+  done: 'Yapıldı',
+  today: 'Bugün',
+  missed: 'Kaçırıldı',
+  skipped: 'Atlandı',
+  upcoming: '',
+  unscheduled: '',
+  'before-start': '',
+}
 
 export default function TodayPage() {
   const uid = useUid()
@@ -17,22 +40,16 @@ export default function TodayPage() {
   const weights = useBodyWeights()
   const exercises = useExercises()
   const navigate = useNavigate()
-  const [showOthers, setShowOthers] = useState(false)
+  const [picked, setPicked] = useState<string | null>(null)
   const today = isoWeekday()
 
   const data = useLiveQuery(async () => {
     const program = await activeProgram(uid)
     const days = program ? await programDays(program.id) : []
-    const todayDay = days.find((d) => d.weekday === today) ?? null
-    const items = todayDay ? await dayItems(todayDay.id) : []
+    const items = new Map(await Promise.all(days.map(async (d) => [d.id, await dayItems(d.id)] as const)))
     const open = await openSession(uid)
-    const monday = new Date()
-    monday.setHours(0, 0, 0, 0)
-    monday.setDate(monday.getDate() - (today - 1))
-    const week = alive(await db.sessions.where('user_id').equals(uid).toArray()).filter(
-      (s) => s.ended_at && new Date(s.started_at) >= monday,
-    )
-    return { days, todayDay, items, open, doneWeekdays: new Set(week.map((s) => isoWeekday(new Date(s.started_at)))) }
+    const sessions = alive(await db.sessions.where('user_id').equals(uid).toArray())
+    return { days, items, open, status: weekStatus(days, sessions, new Date(), program ? new Date(program.updated_at) : undefined) }
   }, [uid, today])
 
   async function begin(day: ProgramDay | null) {
@@ -45,7 +62,16 @@ export default function TodayPage() {
   }
 
   const lastWeight = weights?.at(-1)
-  const doneToday = data?.doneWeekdays.has(today)
+  const todayDay = data?.days.find((d) => d.weekday === today) ?? null
+  // Default focus: today's workout unless it is done, then the first missed one.
+  const defaultDay =
+    (todayDay && data?.status.get(todayDay.id) !== 'done' ? todayDay : null) ??
+    data?.days.find((d) => data.status.get(d.id) === 'missed') ??
+    todayDay
+  const selected = data?.days.find((d) => d.id === picked) ?? defaultDay
+  const selectedStatus = selected ? data?.status.get(selected.id) : undefined
+  const selectedItems = selected ? (data?.items.get(selected.id) ?? []) : []
+  const missed = data?.days.filter((d) => data.status.get(d.id) === 'missed') ?? []
 
   return (
     <Page
@@ -70,73 +96,113 @@ export default function TodayPage() {
       )}
 
       <div className="mb-4 flex justify-between gap-1">
-        {WEEKDAYS.map((d, i) => {
+        {WEEKDAYS.map((label, i) => {
           const wd = i + 1
           const day = data?.days.find((x) => x.weekday === wd)
-          const done = data?.doneWeekdays.has(wd)
+          const st = day ? data?.status.get(day.id) : undefined
+          const isSelected = !!day && day.id === selected?.id
           return (
-            <div key={d} className="flex flex-1 flex-col items-center gap-1">
-              <span className={cx('text-xs', wd === today ? 'font-bold text-white' : 'text-slate-500')}>{d}</span>
+            <button
+              key={label}
+              disabled={!day}
+              onClick={() => day && setPicked(day.id)}
+              className="flex flex-1 flex-col items-center gap-1"
+              aria-label={day ? `${day.name} ${STATUS_LABEL[st ?? 'upcoming']}` : label}
+            >
+              <span className={cx('text-xs', wd === today ? 'font-bold text-white' : 'text-slate-500')}>{label}</span>
               <span
                 className={cx(
-                  'flex h-9 w-9 items-center justify-center rounded-full text-sm',
-                  done ? 'bg-accent-strong text-slate-950' : day ? (day.optional ? 'border border-dashed border-slate-600' : 'border border-slate-500') : 'bg-slate-800/50',
-                  wd === today && !done && 'ring-2 ring-accent',
+                  'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
+                  st === 'done' && 'bg-accent-strong text-slate-950',
+                  st === 'missed' && 'border-2 border-amber-400 text-amber-300',
+                  (st === 'today' || st === 'upcoming' || st === 'skipped' || st === 'before-start') && (day?.optional ? 'border border-dashed border-slate-600' : 'border border-slate-500'),
+                  !day && 'bg-slate-800/50',
+                  isSelected && 'ring-2 ring-accent ring-offset-2 ring-offset-[#0b1120]',
                 )}
               >
-                {done ? '✓' : ''}
+                {st === 'done' ? '✓' : st === 'missed' ? '!' : ''}
               </span>
-            </div>
+            </button>
           )
         })}
       </div>
 
-      {data && (
+      {data && selected && (
         <Card className="mb-4">
-          {data.todayDay ? (
-            <>
-              <div className="text-sm text-slate-400">Bugünün antrenmanı{data.todayDay.optional && ' · isteğe bağlı'}</div>
-              <div className="mb-3 text-lg font-bold text-white">{data.todayDay.name}</div>
-              <ul className="mb-4 space-y-1.5">
-                {data.items.map((it) => (
-                  <li key={it.id} className="flex justify-between gap-3 text-sm">
-                    <span className="text-slate-200">{exerciseName(exercises, it.exercise_id)}</span>
-                    <span className="shrink-0 text-slate-500">
-                      {it.block === 'cardio' ? `${it.duration_min ?? ''} dk` : `${it.sets}×${repRange(it)}`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <Button className="w-full" onClick={() => begin(data.todayDay)}>
-                {data.open ? 'Antrenmana dön' : doneToday ? 'Tekrar başlat' : 'Antrenmanı başlat'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="text-lg font-bold text-white">Bugün dinlenme günü 😌</div>
-              <p className="mt-1 text-sm text-slate-400">Programında bugün için antrenman yok. İstersen aşağıdan başka bir gün başlat.</p>
-            </>
-          )}
+          <div className={cx('text-sm', selectedStatus === 'missed' ? 'text-amber-300' : 'text-slate-400')}>
+            {selectedStatus === 'today'
+              ? 'Bugünün antrenmanı'
+              : selectedStatus === 'missed'
+                ? 'Kaçırılan antrenman · bugün yapabilirsin'
+                : selectedStatus === 'done'
+                  ? 'Bu hafta yapıldı ✓'
+                  : 'Seçili antrenman'}
+            {selected.optional && ' · isteğe bağlı'}
+          </div>
+          <div className="text-lg font-bold text-white">{selected.name}</div>
+          {profile && <div className="mb-3 text-xs text-slate-500">≈ {estimateMinutes(selectedItems, profile.plan_key)} dk</div>}
+          <ul className="mb-4 space-y-1.5">
+            {selectedItems.map((it) => (
+              <li key={it.id} className="flex justify-between gap-3 text-sm">
+                <span className="text-slate-200">{exerciseName(exercises, it.exercise_id)}</span>
+                <span className="shrink-0 text-slate-500">
+                  {it.block === 'cardio' ? `${it.duration_min ?? ''} dk` : `${it.sets}×${repRange(it)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Button className="w-full" onClick={() => begin(selected)}>
+            {data.open ? 'Devam eden antrenmana dön' : selectedStatus === 'done' ? 'Tekrar yap' : 'Antrenmanı başlat'}
+          </Button>
+        </Card>
+      )}
+      {data && !selected && (
+        <Card className="mb-4">
+          <div className="text-lg font-bold text-white">Bugün dinlenme günü 😌</div>
+          <p className="mt-1 text-sm text-slate-400">Aşağıdan haftanın herhangi bir antrenmanını başlatabilirsin.</p>
         </Card>
       )}
 
-      <button onClick={() => setShowOthers((v) => !v)} className="mb-2 text-sm font-semibold text-slate-300">
-        {showOthers ? '▾' : '▸'} Başka bir antrenman başlat
-      </button>
-      {showOthers && data && (
-        <div className="mb-4 space-y-2">
-          {data.days
-            .filter((d) => d.id !== data.todayDay?.id)
-            .map((d) => (
-              <Card key={d.id} onClick={() => begin(d)} className="py-3">
-                <span className="text-slate-200">{d.name}</span>
-              </Card>
-            ))}
-          <Card onClick={() => begin(null)} className="py-3">
-            <span className="text-slate-200">Serbest antrenman (boş)</span>
-          </Card>
-        </div>
+      {missed.length > 0 && selectedStatus !== 'missed' && (
+        <Card tone="warn" className="mb-4">
+          <div className="text-sm font-semibold text-amber-300">Bu hafta kaçırılan</div>
+          {missed.map((d) => (
+            <button key={d.id} onClick={() => setPicked(d.id)} className="mt-1 block text-left text-sm text-slate-200 underline-offset-4 hover:underline">
+              {d.name}
+            </button>
+          ))}
+        </Card>
       )}
+
+      <h2 className="mb-2 text-sm font-semibold text-slate-300">Bu haftanın programı</h2>
+      <div className="mb-4 space-y-2">
+        {data?.days.map((d) => {
+          const st = data.status.get(d.id) ?? 'upcoming'
+          return (
+            <Card key={d.id} onClick={() => setPicked(d.id)} className={cx('py-3', d.id === selected?.id && 'ring-1 ring-accent/60')}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-slate-200">{d.name}</span>
+                {STATUS_LABEL[st] && (
+                  <span
+                    className={cx(
+                      'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                      st === 'done' && 'bg-emerald-500/15 text-emerald-300',
+                      st === 'missed' && 'bg-amber-500/15 text-amber-300',
+                      st === 'today' && 'bg-sky-500/15 text-sky-300',
+                      st === 'skipped' && 'bg-slate-700 text-slate-400',
+                    )}
+                  >
+                    {STATUS_LABEL[st]}
+                  </span>
+                )}
+              </div>
+            </Card>
+          )
+        })}
+        <button onClick={() => begin(null)} className="w-full py-2 text-sm text-slate-500">
+          + Serbest antrenman (boş)
+        </button>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Card onClick={() => navigate('/ilerleme?tab=vucut')}>
