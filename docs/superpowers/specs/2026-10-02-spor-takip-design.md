@@ -56,3 +56,10 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 - **60-minute cap:** `estimateMinutes` (warm-up, ramp-up sets, ~45 s/set, 80 s per-side sets, rests, 75 s station change) is unit-tested for every day and both plans. Current estimates: Mert 52–58 min, Simge 58–59 min on lifting days.
 - **Rollout:** `TEMPLATE_VERSION = 2`; `ensurePerson` replaces an active program with an older version on next launch. History is kept.
 - **Make-up workouts:** Today shows the whole week (tap any day to start it). `weekStatus` credits a finished session to its program day regardless of the weekday it was done; non-optional past days without one are "missed" (days before the program was installed are not).
+
+## Update 2026-10-11 — v3 (approved by the user)
+
+- No cardio finishers on lifting days; cardio only Wed/Sat/Sun.
+- Cardio days identical for both: Wed 45 min stationary bike, Sat 45 min incline walk, Sun 45 min elliptical. Sunday is no longer optional for Mert.
+- Mert only: barbell shrug 3×10-12 on Tue; palms-up wrist curl 3×15-20 on Fri as a superset with hanging leg raises.
+- Estimates: Mert 58/58/56/59 min, Simge 43/43/43/45 min on lifting days; cardio days 46 min.

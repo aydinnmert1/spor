@@ -60,7 +60,7 @@ describe('installTemplate', () => {
     expect(strength.template_version).toBe(TEMPLATE_VERSION)
     const sDays = await programDays(strength.id)
     expect(sDays.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
-    expect(sDays.map((d) => d.optional)).toEqual([false, false, false, false, false, false, true])
+    expect(sDays.every((d) => !d.optional)).toBe(true)
     const monday = await dayItems(sDays[0].id)
     expect(monday.find((i) => i.block === 'cardio')).toBeUndefined()
     expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 4, rep_min: 4, rep_max: 6 })
@@ -72,7 +72,7 @@ describe('installTemplate', () => {
     const tMonday = await dayItems(tDays[0].id)
     expect(tMonday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 3, rep_min: 10 })
     expect(tMonday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
-    expect(tMonday.at(-1)).toMatchObject({ block: 'cardio', duration_min: 15 })
+    expect(tMonday.some((i) => i.block === 'cardio')).toBe(false)
     const tTuesday = await dayItems(tDays[1].id)
     expect(tTuesday.find((i) => i.exercise_id === 'Split_Squat_with_Dumbbells')?.per_side).toBe(true)
 

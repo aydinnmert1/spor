@@ -394,6 +394,24 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
     ],
     tips: 'Kolun arkada başlaması biceps’i tam esnetir; hafif kiloyla başla.',
   },
+  Barbell_Shrug: {
+    name: 'Shrug (Halter)',
+    instructions: [
+      'Barı kalça önünde, omuz genişliğinde tut; kollar düz, gövde dik.',
+      'Omuzları kulaklarına doğru olabildiğince yukarı kaldır.',
+      'Tepede 1 sn trapezleri sık, kontrollü indir.',
+    ],
+    tips: 'Omuzları döndürme; dirsekler bükülmesin. Ağır setlerde kayış kullanılabilir.',
+  },
+  'Palms-Up_Barbell_Wrist_Curl_Over_A_Bench': {
+    name: 'Wrist Curl (Ön Kol, Halter)',
+    instructions: [
+      'Sehpanın yanına diz çök, ön kollarını sehpaya yasla; bileklerin kenardan dışarıda, avuçlar yukarı.',
+      'Barı parmak uçlarına kadar aşağı bırak.',
+      'Bileklerini bükerek barı olabildiğince yukarı kaldır, tepede sık.',
+      'Kontrollü indir; ön kollar sehpadan kalkmasın.',
+    ],
+  },
   // Common alternatives (name only)
   'Close-Grip_Front_Lat_Pulldown': { name: 'Lat Pulldown (Dar Tutuş)' },
   Barbell_Walking_Lunge: { name: 'Yürüyerek Lunge (Halter)' },
