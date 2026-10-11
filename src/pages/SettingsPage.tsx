@@ -129,6 +129,9 @@ export default function SettingsPage() {
         <Card>
           <h3 className="mb-2 font-semibold text-white">Veri</h3>
           <Button variant="secondary" className="w-full" onClick={exportData}>Yedeği indir (JSON)</Button>
+          <p className="mt-3 text-xs text-slate-500">
+            Sürüm: {new Date(__BUILD_TIME__).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </p>
         </Card>
       </div>
     </Page>

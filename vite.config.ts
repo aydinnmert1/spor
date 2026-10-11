@@ -9,11 +9,16 @@ const base = process.env.BASE_PATH ?? '/spor/'
 
 export default defineConfig({
   base,
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered in main.tsx so the app can poll for updates.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Spor Takip',
@@ -33,6 +38,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Activate a new version right away instead of waiting for every tab to close.
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
