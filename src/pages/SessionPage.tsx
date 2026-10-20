@@ -247,7 +247,7 @@ function ExerciseHeader({ name, item, onInfo }: { name: string; item: ProgramIte
         <div className="mt-0.5 text-sm text-slate-400">
           {item.block === 'cardio'
             ? `${item.duration_min ?? '—'} dk`
-            : `Hedef ${item.sets} × ${repRange(item)} · dinlenme ${formatDuration(item.rest_sec * 1000)}`}
+            : `Hedef ${item.sets} × ${repRange(item)} · ${item.rest_sec ? `dinlenme ${formatDuration(item.rest_sec * 1000)}` : 'süperset: dinlenmeden sonrakine geç'}`}
         </div>
       )}
       {item?.note && <div className="mt-1 text-xs text-amber-200/80">{item.note}</div>}

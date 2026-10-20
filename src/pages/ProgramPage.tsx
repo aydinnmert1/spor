@@ -107,7 +107,7 @@ export default function ProgramPage() {
                           <div className="truncate text-sm font-medium text-slate-100">{exerciseName(exercises, it.exercise_id)}</div>
                           <div className="text-xs text-slate-500">
                             {BLOCK_LABEL[it.block]} ·{' '}
-                            {it.block === 'cardio' ? `${it.duration_min ?? '—'} dk` : `${it.sets}×${repRange(it)} · ${formatDuration(it.rest_sec * 1000)}`}
+                            {it.block === 'cardio' ? `${it.duration_min ?? '—'} dk` : `${it.sets}×${repRange(it)} · ${it.rest_sec ? formatDuration(it.rest_sec * 1000) : 'süperset →'}`}
                           </div>
                         </button>
                       </li>

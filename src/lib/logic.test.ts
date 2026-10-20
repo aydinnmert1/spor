@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { calcTargets } from '../data/nutrition'
-import { TEMPLATE, TEMPLATE_VERSION } from '../data/programs'
+import { TEMPLATE_VERSION, TEMPLATES } from '../data/programs'
 import { db, LOCAL_USER, remove, save, setMeta } from './db'
 import { adoptLocalData, mergeRemote } from './sync'
 import type { SetLog } from './types'
@@ -55,37 +55,48 @@ describe('calcTargets', () => {
 })
 
 describe('installTemplate', () => {
-  it('builds the same upper/lower week for both plans with per-plan stations and doses', async () => {
+  it('gives Mert six lifting days: one main lift and two supersets each', async () => {
     const strength = await installTemplate('guc')
-    expect(strength.template_version).toBe(TEMPLATE_VERSION)
-    const sDays = await programDays(strength.id)
-    expect(sDays.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
-    expect(sDays.every((d) => !d.optional)).toBe(true)
-    const monday = await dayItems(sDays[0].id)
-    expect(monday.find((i) => i.block === 'cardio')).toBeUndefined()
-    expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 4, rep_min: 4, rep_max: 6 })
-    expect(monday[2].exercise_id).toBe('Standing_Military_Press')
+    expect(strength.template_version).toBe(TEMPLATE_VERSION.guc)
+    const days = await programDays(strength.id)
+    expect(days.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(days.map((d) => d.optional)).toEqual([false, false, false, false, false, false, true])
+    const mains: string[] = []
+    for (const day of days.slice(0, 6)) {
+      const items = await dayItems(day.id)
+      expect(items.map((i) => i.block)).toEqual(['main', 'accessory', 'accessory', 'accessory', 'accessory'])
+      // Superset openers carry no rest; the partner carries the rest between rounds.
+      expect([items[1].rest_sec, items[3].rest_sec]).toEqual([0, 0])
+      expect(items[2].rest_sec).toBeGreaterThan(0)
+      expect(items[4].rest_sec).toBeGreaterThan(0)
+      mains.push(items[0].exercise_id)
+    }
+    // Each of the big three twice a week.
+    for (const lift of ['Barbell_Squat', 'Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Deadlift']) {
+      expect(mains.filter((m) => m === lift)).toHaveLength(2)
+    }
+  })
 
+  it('keeps Simge on the upper/lower week with cardio days', async () => {
     const toning = await installTemplate('sikilasma')
-    const tDays = await programDays(toning.id)
-    expect(tDays.every((d) => !d.optional)).toBe(true)
-    const tMonday = await dayItems(tDays[0].id)
-    expect(tMonday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 3, rep_min: 10 })
-    expect(tMonday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
-    expect(tMonday.some((i) => i.block === 'cardio')).toBe(false)
-    const tTuesday = await dayItems(tDays[1].id)
-    expect(tTuesday.find((i) => i.exercise_id === 'Split_Squat_with_Dumbbells')?.per_side).toBe(true)
-
-    // Only the newest program stays active.
-    const programs = await db.programs.toArray()
-    expect(programs.filter((p) => p.active).map((p) => p.id)).toEqual([toning.id])
+    expect(toning.template_version).toBe(TEMPLATE_VERSION.sikilasma)
+    const days = await programDays(toning.id)
+    expect(days.every((d) => !d.optional)).toBe(true)
+    const monday = await dayItems(days[0].id)
+    expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 3, rep_min: 10 })
+    expect(monday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
+    expect(monday.some((i) => i.block === 'cardio')).toBe(false)
+    const tuesday = await dayItems(days[1].id)
+    expect(tuesday.find((i) => i.exercise_id === 'Split_Squat_with_Dumbbells')?.per_side).toBe(true)
+    const wednesday = await dayItems(days[2].id)
+    expect(wednesday).toMatchObject([{ block: 'cardio', duration_min: 45 }])
   })
 })
 
 describe('session length', () => {
   for (const plan of ['guc', 'sikilasma'] as const) {
     it(`keeps every ${plan} session within 60 minutes`, () => {
-      for (const day of TEMPLATE) {
+      for (const day of TEMPLATES[plan]) {
         const items = day.items
           .filter((i) => i[plan])
           .map((i) => ({
@@ -128,11 +139,26 @@ describe('template upgrade', () => {
     const programs = await db.programs.where('user_id').equals('mert').toArray()
     const active = programs.filter((p) => p.active)
     expect(active).toHaveLength(1)
-    expect(active[0].template_version).toBe(TEMPLATE_VERSION)
+    expect(active[0].template_version).toBe(TEMPLATE_VERSION.guc)
     expect(programs.find((p) => p.id === old.id)?.active).toBe(false)
 
     await ensurePerson('mert')
     expect(await db.programs.where('user_id').equals('mert').count()).toBe(2)
+  })
+})
+
+describe('per-plan rollout', () => {
+  it('replaces only the plan whose template version went up', async () => {
+    await setMeta('uid', 'simge')
+    const simge = await save('programs', { name: 'Upper/Lower · Sıkılaşma', active: true, template_version: TEMPLATE_VERSION.sikilasma })
+    await ensurePerson('simge')
+    expect((await db.programs.where('user_id').equals('simge').toArray()).map((p) => p.id)).toEqual([simge.id])
+
+    await setMeta('uid', 'mert')
+    await save('programs', { name: 'Upper/Lower · Güç', active: true, template_version: 3 })
+    await ensurePerson('mert')
+    const mert = (await db.programs.where('user_id').equals('mert').toArray()).filter((p) => p.active)
+    expect(mert.map((p) => p.template_version)).toEqual([TEMPLATE_VERSION.guc])
   })
 })
 

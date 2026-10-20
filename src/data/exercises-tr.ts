@@ -412,6 +412,61 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
       'Kontrollü indir; ön kollar sehpadan kalkmasın.',
     ],
   },
+  'Dips_-_Triceps_Version': {
+    name: 'Dips (Triceps)',
+    instructions: [
+      'Paralel barlarda kollar düz şekilde kendini kaldır; gövde dik, bacaklar aşağıda.',
+      'Dirsekleri geriye doğru bükerek omuzlar dirsek hizasına gelene kadar in.',
+      'Triceps ile iterek kolları tam düzleştir.',
+    ],
+    tips: 'Gövdeyi dik tutmak triceps’i, öne eğmek göğsü daha çok çalıştırır.',
+  },
+  Ab_Roller: {
+    name: 'Ab Wheel (Karın Tekeri)',
+    instructions: [
+      'Dizlerinin üstünde, tekeri omuzlarının altında tut. Karnı sık, kalçayı hafif içe kıvır.',
+      'Beli çukurlaştırmadan tekeri öne doğru yuvarla; gövde yere yaklaşırken kalça ve omuzlar aynı hizada kalsın.',
+      'Formun bozulmadan gidebildiğin en uzak noktadan karınla çekerek başlangıca dön.',
+    ],
+    tips: 'Bel çöküyorsa mesafeyi kısalt. Zamanla ayakta (diz kaldırmadan) yapmaya ilerle.',
+  },
+  Pallof_Press: {
+    name: 'Pallof Press',
+    instructions: [
+      'Kablo makarasını göğüs hizasına ayarla, makinenin yanında durarak tutamağı iki elle göğsüne al.',
+      'Ayaklar omuz genişliğinde, karın sıkı. Tutamağı göğsünden düz öne it.',
+      'Kablonun seni döndürmesine izin vermeden 2 sn tut, göğsüne geri getir.',
+      'Bir tarafın tekrarlarını bitir, dönüp diğer tarafa geç.',
+    ],
+    tips: 'Amaç dönmeye direnmek; kalça ve omuzlar sürekli öne baksın.',
+  },
+  Reverse_Barbell_Curl: {
+    name: 'Reverse Curl (Ters Tutuş)',
+    instructions: [
+      'Barı omuz genişliğinde, avuçlar aşağı bakacak şekilde (ters tutuş) tut.',
+      'Dirsekleri gövdeye sabitleyip barı omuz hizasına kaldır; bilekler düz kalsın.',
+      'Kontrollü şekilde indir.',
+    ],
+    tips: 'Ön kolun dış yüzünü ve brachioradialis’i çalıştırır; wrist curl’ün dengeleyicisidir.',
+  },
+  Side_Bridge: {
+    name: 'Yan Plank',
+    instructions: [
+      'Yan yat, dirsek omuzun altında, ayaklar üst üste.',
+      'Kalçayı kaldırarak baştan ayağa düz bir çizgi oluştur.',
+      'Kalça düşmeden süre boyunca tut, sonra diğer tarafa geç.',
+    ],
+    tips: 'Kolaylaşınca üstteki eline plaka al ya da üst bacağı kaldır.',
+  },
+  Suitcase_Carry: {
+    name: 'Tek Elle Farmer’s Walk (Suitcase Carry)',
+    instructions: [
+      'Tek elinde ağır bir dambıl ya da kettlebell tut, diğer el serbest.',
+      'Gövdeyi dik tut; ağırlığın olduğu tarafa eğilmeden, omuzlar düz yürü.',
+      'Hedef mesafeyi tamamla, ağırlığı diğer ele alıp geri dön.',
+    ],
+    tips: 'Karnı yana eğilmeye karşı, ön kolu kavramaya karşı çalıştırır.',
+  },
   // Common alternatives (name only)
   'Close-Grip_Front_Lat_Pulldown': { name: 'Lat Pulldown (Dar Tutuş)' },
   Barbell_Walking_Lunge: { name: 'Yürüyerek Lunge (Halter)' },
@@ -419,15 +474,12 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
   Cable_Crossover: { name: 'Kablo Crossover' },
   Hyperextensions_Back_Extensions: { name: 'Back Extension (Hiperekstansiyon)' },
   Sumo_Deadlift: { name: 'Sumo Deadlift' },
-  'Dips_-_Triceps_Version': { name: 'Dips (Triceps)' },
   'Close-Grip_Barbell_Bench_Press': { name: 'Dar Tutuş Bench Press' },
   Russian_Twist: { name: 'Russian Twist' },
   Mountain_Climbers: { name: 'Mountain Climber' },
-  Ab_Roller: { name: 'Ab Roller' },
   Seated_Leg_Curl: { name: 'Oturarak Leg Curl' },
   Dumbbell_Bench_Press: { name: 'Dambıl Bench Press' },
   Hammer_Grip_Incline_DB_Bench_Press: { name: 'Hammer Tutuş Eğimli Dambıl Press' },
-  Pallof_Press: { name: 'Pallof Press' },
   Running_Treadmill: { name: 'Koşu (Koşu Bandı)' },
   Bicycling: { name: 'Bisiklet' },
   Battling_Ropes: { name: 'Battle Rope' },

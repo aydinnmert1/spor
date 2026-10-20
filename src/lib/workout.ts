@@ -1,6 +1,6 @@
 import { calcTargets } from '../data/nutrition'
 import { PEOPLE, type PersonKey } from '../data/people'
-import { PROGRAM_NAME, TEMPLATE, TEMPLATE_VERSION } from '../data/programs'
+import { PROGRAM_NAME, TEMPLATE_VERSION, TEMPLATES } from '../data/programs'
 import { alive, currentUserId, db, save } from './db'
 import type { Block, PlanKey, Program, ProgramDay, ProgramItem, Session, SetLog } from './types'
 
@@ -60,9 +60,9 @@ export async function installTemplate(plan: PlanKey): Promise<Program> {
   for (const p of alive(await db.programs.where('user_id').equals(uid).toArray())) {
     if (p.active) await save('programs', { ...p, active: false })
   }
-  const program = await save('programs', { name: PROGRAM_NAME[plan], active: true, template_version: TEMPLATE_VERSION })
+  const program = await save('programs', { name: PROGRAM_NAME[plan], active: true, template_version: TEMPLATE_VERSION[plan] })
   let dayPos = 0
-  for (const t of TEMPLATE) {
+  for (const t of TEMPLATES[plan]) {
     const day = await save('program_days', {
       program_id: program.id,
       position: dayPos++,
@@ -102,7 +102,7 @@ export async function ensurePerson(key: PersonKey): Promise<void> {
   const person = PEOPLE[key]
   const active = await activeProgram(key)
   // A newer template replaces the active program; history stays untouched.
-  if (!active || (active.template_version ?? 1) < TEMPLATE_VERSION) await installTemplate(person.plan)
+  if (!active || (active.template_version ?? 1) < TEMPLATE_VERSION[person.plan]) await installTemplate(person.plan)
   const weights = alive(await db.body_weights.where('user_id').equals(key).toArray()).sort((a, b) => a.date.localeCompare(b.date))
   if (weights.length === 0) await save('body_weights', { date: localDate(), kg: person.start_weight_kg })
   const weight = weights.at(-1)?.kg ?? person.start_weight_kg

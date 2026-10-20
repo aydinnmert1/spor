@@ -63,3 +63,11 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 - Cardio days identical for both: Wed 45 min stationary bike, Sat 45 min incline walk, Sun 45 min elliptical. Sunday is no longer optional for Mert.
 - Mert only: barbell shrug 3×10-12 on Tue; palms-up wrist curl 3×15-20 on Fri as a superset with hanging leg raises.
 - Estimates: Mert 58/58/56/59 min, Simge 43/43/43/45 min on lifting days; cardio days 46 min.
+
+## Update 2026-10-20 — Mert v4: 6 days + supersets (approved)
+
+- Templates are now per plan (`TEMPLATES`, `TEMPLATE_VERSION = { guc: 4, sikilasma: 3 }`); bumping one plan's version only replaces that plan's program. Simge stays on Upper/Lower v3.
+- Mert, Mon–Sat: one main lift (squat/bench/deadlift; each twice a week as a heavy day Mon/Tue/Wed and a volume/speed day Thu/Fri/Sat), then two supersets of non-competing pairs: push + pull, and core + grip (grip always last so it does not limit pulling). Sunday optional walk/rest.
+- Goals covered weekly: grip (wrist curl, farmer's walk, reverse curl, hammer curl, shrug, suitcase carry), core (hanging leg raise, ab wheel ×2, Pallof press, side plank, suitcase carry), push and pull variations.
+- Estimates: 51/51/46/45/41/49 min. `Suitcase_Carry` added to the exercise data (no photos).
+- UI: rest 0 shows as "süperset" instead of 0:00.
