@@ -1,17 +1,18 @@
 import type { Block, PlanKey } from '../lib/types'
 
 // Each plan has its own weekly template:
-// - "guc" (Mert, strength, 10+ years), v4 (2026-10-20): 6 lifting days. Every day
-//   opens with one of bench/squat/deadlift (each twice a week: a heavy day and a
-//   lighter volume/speed day), followed by two supersets of non-competing pairs
-//   (push + pull, core + grip) for grip, core and pushing/pulling strength. Sunday off.
+// - "guc" (Mert, strength, 10+ years), v5 (2026-10-22): 4 lifting days, Mon squat,
+//   Tue bench, Thu deadlift, Fri overhead press. Each opens with the main lift and is
+//   followed by two supersets of non-competing pairs (push + pull, core + grip) for
+//   grip, core and pushing/pulling strength; Friday adds leg curl + calf raise.
+//   Wed/Sat/Sun cardio is optional.
 // - "sikilasma" (Simge, fat loss + toning, ~1 year), v3 (2026-10-11): Upper/Lower
 //   Mon/Tue/Thu/Fri, 8-15 reps, 45-90 s rest; cardio Wed/Sat/Sun.
 // Every session is capped at 60 minutes; see estimateMinutes and its test.
 // Supersets: the first exercise has 0 s rest, the second carries the rest between rounds.
 
 /** Bump a plan's version to replace that plan's active program on next launch. */
-export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 4, sikilasma: 3 }
+export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 5, sikilasma: 3 }
 
 /** [sets, repMin, repMax, restSec] */
 type Dose = [number, number, number, number]
@@ -42,11 +43,11 @@ export interface TemplateDay {
 
 export const PLAN_LABELS: Record<PlanKey, { title: string; summary: string; progression: string }> = {
   guc: {
-    title: 'Güç odaklı · 6 gün + süperset',
+    title: 'Güç odaklı · 4 gün + süperset',
     summary:
-      'Pzt–Cmt her gün bir ana kaldırış (squat, bench, deadlift; her biri haftada 2 kez: ağır + hafif gün) ve iki uyumlu süperset: itme + çekme, karın + kavrama. Pazar dinlenme.',
+      'Pzt squat · Sal bench · Per deadlift · Cum ayakta omuz press. Her gün ana kaldırış + iki uyumlu süperset (itme + çekme, karın + kavrama); Cuma ek olarak arka bacak + baldır. Çar/Cmt/Paz kardiyo isteğe bağlı.',
     progression:
-      'Ağır günlerde (Pzt squat, Sal bench, Çar deadlift) bütün setlerde üst tekrar sınırına ulaşınca bir sonraki hafta kiloyu artır: squat/deadlift +2,5 kg, bench/press +1,25-2,5 kg. Hafif günlerde (Per, Cum, Cmt) kilo ağır günün ~%70-75’i; hızlı ve temiz tekrar. Yardımcı hareketlerde de üst tekrar sınırına ulaşınca kilo artır. Her 5-6 haftada bir hafif hafta: setleri yarıya indir, kilolar ~%10 düşük.',
+      'Ana kaldırışlarda bütün setlerde üst tekrar sınırına ulaşınca bir sonraki hafta kiloyu artır: squat/deadlift +2,5 kg, bench +1,25-2,5 kg, omuz press +1-1,25 kg (mikro plaka). Yardımcı hareketlerde de üst tekrar sınırına ulaşınca kilo artır. Her 5-6 haftada bir hafif hafta: setleri yarıya indir, kilolar ~%10 düşük.',
   },
   sikilasma: {
     title: 'Kilo verme + sıkılaşma · Upper/Lower',
@@ -58,7 +59,7 @@ export const PLAN_LABELS: Record<PlanKey, { title: string; summary: string; prog
 }
 
 export const PROGRAM_NAME: Record<PlanKey, string> = {
-  guc: '6 Gün · Güç + Süperset',
+  guc: '4 Gün · Güç + Süperset',
   sikilasma: 'Upper/Lower · Sıkılaşma',
 }
 
@@ -212,21 +213,21 @@ const HEAVY = 'Ağır gün. Önce 5 dk genel ısınma, sonra kademeli ısınma s
 const SS1 = (next: string) => `Süperset 1/2: dinlenmeden ${next}’e geç.`
 const SS2 = (prev: string) => `Süperset 2/2: sonra dinlen, ${prev}’e dön.`
 
-/** Mert's 6-day week: one main lift + two supersets per day. */
-const SIX_DAY: TemplateDay[] = [
+/** Mert's 4-day week: one main lift + two supersets per day (Friday adds a legs superset). */
+const FOUR_DAY: TemplateDay[] = [
   {
-    name: 'Pazartesi · Squat (ağır)',
+    name: 'Pazartesi · Squat',
     weekday: 1,
     items: [
       { exercise: 'Barbell_Squat', block: 'main', guc: [5, 3, 5, 180], sikilasma: null, note: `${HEAVY} ~%80-87 1RM.` },
-      { exercise: 'Standing_Military_Press', block: 'accessory', guc: [4, 5, 6, 0], sikilasma: null, note: `Dikey itme. ${SS1('barfiks')}` },
-      { exercise: 'Pullups', block: 'accessory', guc: [4, 5, 6, 120], sikilasma: null, note: `Dikey çekme, ağırlık kemeriyle. ${SS2('press')}` },
+      { exercise: 'Dumbbell_Shoulder_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Dikey itme (hacim; ağır omuz günü Cuma). ${SS1('barfiks')}` },
+      { exercise: 'Pullups', block: 'accessory', guc: [4, 5, 6, 120], sikilasma: null, note: `Dikey çekme, ağırlık kemeriyle. ${SS2('press')} 4. sette barfiks tek.` },
       { exercise: 'Hanging_Leg_Raise', block: 'accessory', guc: [3, 10, 15, 0], sikilasma: null, note: `Karın. ${SS1('wrist curl')}` },
       { exercise: 'Palms-Up_Barbell_Wrist_Curl_Over_A_Bench', block: 'accessory', guc: [3, 15, 20, 60], sikilasma: null, note: `Kavrama. ${SS2('bacak kaldırma')}` },
     ],
   },
   {
-    name: 'Salı · Bench (ağır)',
+    name: 'Salı · Bench',
     weekday: 2,
     items: [
       { exercise: 'Barbell_Bench_Press_-_Medium_Grip', block: 'main', guc: [5, 3, 5, 180], sikilasma: null, note: `${HEAVY} ~%80-87 1RM.` },
@@ -237,60 +238,56 @@ const SIX_DAY: TemplateDay[] = [
     ],
   },
   {
-    name: 'Çarşamba · Deadlift (ağır)',
+    name: 'Çarşamba · Kardiyo (isteğe bağlı)',
     weekday: 3,
+    optional: { guc: true },
+    items: [
+      { exercise: 'Bicycling_Stationary', block: 'cardio', guc: CARDIO, sikilasma: null, minutes: { guc: 45 }, note: 'İsteğe bağlı. Bölge 2: konuşabileceğin tempo, orta direnç.' },
+    ],
+  },
+  {
+    name: 'Perşembe · Deadlift',
+    weekday: 4,
     items: [
       { exercise: 'Barbell_Deadlift', block: 'main', guc: [4, 2, 4, 210], sikilasma: null, note: `${HEAVY} ~%85-90 1RM.` },
-      { exercise: 'Incline_Dumbbell_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Eğimli itme. ${SS1('chin-up')}` },
-      { exercise: 'Chin-Up', block: 'accessory', guc: [3, 6, 8, 90], sikilasma: null, note: `Çekme, ağırlık kemeriyle. ${SS2('press')}` },
+      { exercise: 'Split_Squat_with_Dumbbells', block: 'accessory', perSide: true, guc: [3, 8, 8, 0], sikilasma: null, note: `Arka ayak sehpada (Bulgarian). Tekrar her bacak. ${SS1('chin-up')}` },
+      { exercise: 'Chin-Up', block: 'accessory', guc: [3, 6, 8, 90], sikilasma: null, note: `Çekme, ağırlık kemeriyle. ${SS2('split squat')}` },
       { exercise: 'Pallof_Press', block: 'accessory', perSide: true, guc: [3, 10, 10, 0], sikilasma: null, note: `Karın (dönmeye direnç). Tekrar her taraf için. ${SS1('reverse curl')}` },
       { exercise: 'Reverse_Barbell_Curl', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Ön kol dış yüzü. ${SS2('Pallof press')}` },
     ],
   },
   {
-    name: 'Perşembe · Squat (hacim)',
-    weekday: 4,
+    name: 'Cuma · Omuz press',
+    weekday: 5,
     items: [
-      { exercise: 'Barbell_Squat', block: 'main', guc: [4, 4, 6, 150], sikilasma: null, note: 'Hafif gün: ~%70-75 1RM. İstersen dipte 2 sn duraklamalı squat 4×4.' },
-      { exercise: 'Dumbbell_Shoulder_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Dikey itme. ${SS1('row')}` },
+      { exercise: 'Standing_Military_Press', block: 'main', guc: [5, 3, 5, 150], sikilasma: null, note: `${HEAVY} Ayakta, sıkı form; kalçayı ve karnı sık.` },
+      { exercise: 'Incline_Dumbbell_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Eğimli itme. ${SS1('row')}` },
       { exercise: 'One-Arm_Dumbbell_Row', block: 'accessory', perSide: true, guc: [3, 8, 10, 90], sikilasma: null, note: `Yatay çekme, tekrar her kol için. ${SS2('press')}` },
       { exercise: 'Side_Bridge', block: 'accessory', perSide: true, guc: [3, 30, 45, 0], sikilasma: null, note: `Karın (yana eğilmeye direnç). Tekrar = saniye, her taraf. ${SS1('hammer curl')}` },
       { exercise: 'Hammer_Curls', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Kavrama + ön kol. ${SS2('yan plank')}` },
+      { exercise: 'Lying_Leg_Curls', block: 'accessory', guc: [3, 10, 12, 0], sikilasma: null, note: `Arka bacak. ${SS1('baldır kaldırma')}` },
+      { exercise: 'Standing_Calf_Raises', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Baldır; altta 1 sn esnet. ${SS2('leg curl')}` },
     ],
   },
   {
-    name: 'Cuma · Bench (hacim)',
-    weekday: 5,
-    items: [
-      { exercise: 'Barbell_Bench_Press_-_Medium_Grip', block: 'main', guc: [4, 5, 6, 150], sikilasma: null, note: 'Hafif gün: ~%72-77 1RM, göğüste 1 sn duraklama.' },
-      { exercise: 'Pullups', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Çekme, vücut ağırlığı. ${SS1('dips')}` },
-      { exercise: 'Dips_-_Triceps_Version', block: 'accessory', guc: [3, 10, 12, 90], sikilasma: null, note: `İtme, vücut ağırlığı. ${SS2('barfiks')}` },
-      { exercise: 'Face_Pull', block: 'accessory', guc: [3, 15, 20, 0], sikilasma: null, note: `Omuz sağlığı. ${SS1('shrug')}` },
-      { exercise: 'Barbell_Shrug', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Trapez + kavrama. ${SS2('face pull')}` },
-    ],
-  },
-  {
-    name: 'Cumartesi · Deadlift (hız)',
+    name: 'Cumartesi · Kardiyo (isteğe bağlı)',
     weekday: 6,
+    optional: { guc: true },
     items: [
-      { exercise: 'Barbell_Deadlift', block: 'main', guc: [8, 2, 2, 75], sikilasma: null, note: 'Hız günü: ~%60-70 1RM, her tekrar patlayıcı; bar yavaşlarsa kilo fazla.' },
-      { exercise: 'Split_Squat_with_Dumbbells', block: 'accessory', perSide: true, guc: [3, 8, 8, 0], sikilasma: null, note: `Arka ayak sehpada (Bulgarian). Tekrar her bacak. ${SS1('ab wheel')}` },
-      { exercise: 'Ab_Roller', block: 'accessory', guc: [3, 10, 10, 90], sikilasma: null, note: `Karın. ${SS2('split squat')}` },
-      { exercise: 'Suitcase_Carry', block: 'accessory', perSide: true, guc: [3, 30, 30, 0], sikilasma: null, note: `Karın (yana) + kavrama. Tekrar = metre, her el. ${SS1('leg curl')}` },
-      { exercise: 'Lying_Leg_Curls', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Arka bacak. ${SS2('tek el farmer')}` },
+      { exercise: 'Walking_Treadmill', block: 'cardio', guc: CARDIO, sikilasma: null, minutes: { guc: 45 }, note: 'İsteğe bağlı. Eğim %8-12, 5-6 km/s tempolu yürüyüş.' },
     ],
   },
   {
-    name: 'Pazar · Dinlenme',
+    name: 'Pazar · Kardiyo (isteğe bağlı)',
     weekday: 7,
     optional: { guc: true },
     items: [
-      { exercise: 'Walking_Treadmill', block: 'cardio', guc: CARDIO, sikilasma: null, minutes: { guc: 30 }, note: 'İsteğe bağlı: 30-45 dk hafif yürüyüş ya da tam dinlenme.' },
+      { exercise: 'Elliptical_Trainer', block: 'cardio', guc: CARDIO, sikilasma: null, minutes: { guc: 45 }, note: 'İsteğe bağlı. Orta direnç, sabit tempo.' },
     ],
   },
 ]
 
 export const TEMPLATES: Record<PlanKey, TemplateDay[]> = {
-  guc: SIX_DAY,
+  guc: FOUR_DAY,
   sikilasma: UPPER_LOWER,
 }

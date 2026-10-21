@@ -55,26 +55,29 @@ describe('calcTargets', () => {
 })
 
 describe('installTemplate', () => {
-  it('gives Mert six lifting days: one main lift and two supersets each', async () => {
+  it('gives Mert four lifting days of a main lift plus supersets, cardio optional', async () => {
     const strength = await installTemplate('guc')
     expect(strength.template_version).toBe(TEMPLATE_VERSION.guc)
     const days = await programDays(strength.id)
     expect(days.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
-    expect(days.map((d) => d.optional)).toEqual([false, false, false, false, false, false, true])
+    expect(days.map((d) => d.optional)).toEqual([false, false, true, false, false, true, true])
+    const lifting = days.filter((d) => !d.optional)
     const mains: string[] = []
-    for (const day of days.slice(0, 6)) {
+    for (const day of lifting) {
       const items = await dayItems(day.id)
-      expect(items.map((i) => i.block)).toEqual(['main', 'accessory', 'accessory', 'accessory', 'accessory'])
+      expect(items[0].block).toBe('main')
+      expect(items.slice(1).every((i) => i.block === 'accessory')).toBe(true)
+      expect((items.length - 1) % 2).toBe(0)
       // Superset openers carry no rest; the partner carries the rest between rounds.
-      expect([items[1].rest_sec, items[3].rest_sec]).toEqual([0, 0])
-      expect(items[2].rest_sec).toBeGreaterThan(0)
-      expect(items[4].rest_sec).toBeGreaterThan(0)
+      for (let i = 1; i < items.length; i += 2) {
+        expect(items[i].rest_sec).toBe(0)
+        expect(items[i + 1].rest_sec).toBeGreaterThan(0)
+      }
       mains.push(items[0].exercise_id)
     }
-    // Each of the big three twice a week.
-    for (const lift of ['Barbell_Squat', 'Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Deadlift']) {
-      expect(mains.filter((m) => m === lift)).toHaveLength(2)
-    }
+    expect(mains).toEqual(['Barbell_Squat', 'Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Deadlift', 'Standing_Military_Press'])
+    const friday = await dayItems(lifting[3].id)
+    expect(friday.map((i) => i.exercise_id)).toEqual(expect.arrayContaining(['Lying_Leg_Curls', 'Standing_Calf_Raises']))
   })
 
   it('keeps Simge on the upper/lower week with cardio days', async () => {

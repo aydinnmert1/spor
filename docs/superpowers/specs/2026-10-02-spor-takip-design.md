@@ -71,3 +71,9 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 - Goals covered weekly: grip (wrist curl, farmer's walk, reverse curl, hammer curl, shrug, suitcase carry), core (hanging leg raise, ab wheel ×2, Pallof press, side plank, suitcase carry), push and pull variations.
 - Estimates: 51/51/46/45/41/49 min. `Suitcase_Carry` added to the exercise data (no photos).
 - UI: rest 0 shows as "süperset" instead of 0:00.
+
+## Update 2026-10-22 — Mert v5: 4 days + supersets (approved)
+
+- Mon squat, Tue bench, Thu deadlift, Fri standing overhead press; each followed by a push + pull and a core + grip superset. Friday adds a leg curl + standing calf raise superset (hamstrings were 1×/week, calves 0×). Monday's vertical push is a dumbbell press (volume) since Friday is the heavy overhead day.
+- Wed/Sat/Sun cardio (45 min bike / incline walk / elliptical) is optional for Mert. Simge unchanged (v3).
+- `TEMPLATE_VERSION.guc = 5`. Estimates: 50/51/48/57 min on lifting days.
