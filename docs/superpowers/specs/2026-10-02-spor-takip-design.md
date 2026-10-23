@@ -77,3 +77,8 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 - Mon squat, Tue bench, Thu deadlift, Fri standing overhead press; each followed by a push + pull and a core + grip superset. Friday adds a leg curl + standing calf raise superset (hamstrings were 1×/week, calves 0×). Monday's vertical push is a dumbbell press (volume) since Friday is the heavy overhead day.
 - Wed/Sat/Sun cardio (45 min bike / incline walk / elliptical) is optional for Mert. Simge unchanged (v3).
 - `TEMPLATE_VERSION.guc = 5`. Estimates: 50/51/48/57 min on lifting days.
+
+## Update 2026-10-23 — swaps (guc v6, sikilasma v4)
+
+- Split squat replaced by leg press for both (Mert Thu superset with chin-ups 3×8-10; Simge Tue 3×12-15).
+- Face pull replaced by reverse pec deck (rear delts) for Simge on Thu 2×15-20. Mert's program had no face pull.

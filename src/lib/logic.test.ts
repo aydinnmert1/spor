@@ -78,6 +78,9 @@ describe('installTemplate', () => {
     expect(mains).toEqual(['Barbell_Squat', 'Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Deadlift', 'Standing_Military_Press'])
     const friday = await dayItems(lifting[3].id)
     expect(friday.map((i) => i.exercise_id)).toEqual(expect.arrayContaining(['Lying_Leg_Curls', 'Standing_Calf_Raises']))
+    const all = (await Promise.all(days.map((d) => dayItems(d.id)))).flat().map((i) => i.exercise_id)
+    expect(all).not.toContain('Split_Squat_with_Dumbbells')
+    expect(all).not.toContain('Face_Pull')
   })
 
   it('keeps Simge on the upper/lower week with cardio days', async () => {
@@ -90,7 +93,12 @@ describe('installTemplate', () => {
     expect(monday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
     expect(monday.some((i) => i.block === 'cardio')).toBe(false)
     const tuesday = await dayItems(days[1].id)
-    expect(tuesday.find((i) => i.exercise_id === 'Split_Squat_with_Dumbbells')?.per_side).toBe(true)
+    const all = await Promise.all(days.map((d) => dayItems(d.id)))
+    const ids = all.flat().map((i) => i.exercise_id)
+    expect(ids).toContain('Leg_Press')
+    expect(ids).not.toContain('Split_Squat_with_Dumbbells')
+    expect(ids).not.toContain('Face_Pull')
+    expect(tuesday.length).toBeGreaterThan(0)
     const wednesday = await dayItems(days[2].id)
     expect(wednesday).toMatchObject([{ block: 'cardio', duration_min: 45 }])
   })

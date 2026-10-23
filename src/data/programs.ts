@@ -12,7 +12,7 @@ import type { Block, PlanKey } from '../lib/types'
 // Supersets: the first exercise has 0 s rest, the second carries the rest between rounds.
 
 /** Bump a plan's version to replace that plan's active program on next launch. */
-export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 5, sikilasma: 3 }
+export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 6, sikilasma: 4 }
 
 /** [sets, repMin, repMax, restSec] */
 type Dose = [number, number, number, number]
@@ -99,7 +99,7 @@ const UPPER_LOWER: TemplateDay[] = [
         noteFor: { sikilasma: 'Bar formu bozuluyorsa o gün goblet squat yap.' },
       },
       { exercise: 'Romanian_Deadlift', block: 'accessory', guc: null, sikilasma: [3, 10, 12, 75], note: 'Ağır ama kontrollü; 2-3 sn iniş.' },
-      { exercise: 'Split_Squat_with_Dumbbells', block: 'accessory', perSide: true, guc: null, sikilasma: [3, 10, 12, 60], note: 'Tekrar her bacak için. Arka ayak sehpada = Bulgarian split squat. Alternatif: leg press.' },
+      { exercise: 'Leg_Press', block: 'accessory', guc: null, sikilasma: [3, 12, 15, 60], note: 'Ayaklar platformun ortasında, kalça pedden kalkmasın.' },
       { exercise: 'Lying_Leg_Curls', block: 'accessory', guc: null, sikilasma: [3, 12, 15, 45] },
       { exercise: 'Standing_Calf_Raises', block: 'accessory', guc: null, sikilasma: [3, 15, 15, 45], note: 'Altta 1 sn esnet, üstte 1 sn sık.' },
       { exercise: 'Barbell_Shrug', block: 'accessory', guc: null, sikilasma: null, note: 'Tepede 1 sn sık; omuzları döndürme, sadece yukarı-aşağı.' },
@@ -142,7 +142,7 @@ const UPPER_LOWER: TemplateDay[] = [
       },
       { exercise: 'Seated_Cable_Rows', block: 'accessory', guc: null, sikilasma: [3, 12, 12, 60], note: 'Dar tutuş, kürek kemiklerini sık.' },
       { exercise: 'Side_Lateral_Raise', block: 'accessory', guc: null, sikilasma: [3, 15, 15, 45] },
-      { exercise: 'Face_Pull', block: 'accessory', guc: null, sikilasma: [2, 15, 20, 45], note: 'Omuz sağlığı ve duruş için.' },
+      { exercise: 'Reverse_Machine_Flyes', block: 'accessory', guc: null, sikilasma: [2, 15, 20, 45], note: 'Arka omuz; omuz sağlığı ve duruş için.' },
       { exercise: 'Incline_Dumbbell_Curl', block: 'accessory', guc: null, sikilasma: [3, 12, 12, 0], note: 'Süperset 1/2: dinlenmeden skullcrusher’a geç.' },
       { exercise: 'EZ-Bar_Skullcrusher', block: 'accessory', guc: null, sikilasma: [3, 12, 12, 45], note: 'Süperset 2/2: sonra dinlen, curl’e dön.' },
     ],
@@ -250,8 +250,8 @@ const FOUR_DAY: TemplateDay[] = [
     weekday: 4,
     items: [
       { exercise: 'Barbell_Deadlift', block: 'main', guc: [4, 2, 4, 210], sikilasma: null, note: `${HEAVY} ~%85-90 1RM.` },
-      { exercise: 'Split_Squat_with_Dumbbells', block: 'accessory', perSide: true, guc: [3, 8, 8, 0], sikilasma: null, note: `Arka ayak sehpada (Bulgarian). Tekrar her bacak. ${SS1('chin-up')}` },
-      { exercise: 'Chin-Up', block: 'accessory', guc: [3, 6, 8, 90], sikilasma: null, note: `Çekme, ağırlık kemeriyle. ${SS2('split squat')}` },
+      { exercise: 'Leg_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Ön bacak + kalça. ${SS1('chin-up')}` },
+      { exercise: 'Chin-Up', block: 'accessory', guc: [3, 6, 8, 90], sikilasma: null, note: `Çekme, ağırlık kemeriyle. ${SS2('leg press')}` },
       { exercise: 'Pallof_Press', block: 'accessory', perSide: true, guc: [3, 10, 10, 0], sikilasma: null, note: `Karın (dönmeye direnç). Tekrar her taraf için. ${SS1('reverse curl')}` },
       { exercise: 'Reverse_Barbell_Curl', block: 'accessory', guc: [3, 10, 12, 60], sikilasma: null, note: `Ön kol dış yüzü. ${SS2('Pallof press')}` },
     ],

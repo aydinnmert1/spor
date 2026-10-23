@@ -467,6 +467,15 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
     ],
     tips: 'Karnı yana eğilmeye karşı, ön kolu kavramaya karşı çalıştırır.',
   },
+  Reverse_Machine_Flyes: {
+    name: 'Ters Pec Deck (Arka Omuz)',
+    instructions: [
+      'Pec deck makinesine yüzün pede dönük otur; kolları ters tutuşa ayarla, tutamaklar omuz hizasında.',
+      'Kollar hafif bükük, tutamakları yana ve geriye doğru aç; kürek kemiklerini sık.',
+      'Tepede 1 sn tut, kontrollü şekilde başlangıca dön.',
+    ],
+    tips: 'Hafif kilo, yüksek tekrar; hareketi omuzun arkasıyla yap, beli kaldırma.',
+  },
   // Common alternatives (name only)
   'Close-Grip_Front_Lat_Pulldown': { name: 'Lat Pulldown (Dar Tutuş)' },
   Barbell_Walking_Lunge: { name: 'Yürüyerek Lunge (Halter)' },
