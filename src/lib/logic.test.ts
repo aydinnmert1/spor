@@ -83,24 +83,20 @@ describe('installTemplate', () => {
     expect(all).not.toContain('Face_Pull')
   })
 
-  it('keeps Simge on the upper/lower week with cardio days', async () => {
+  it('gives Simge two full-body days, every other day optional cardio', async () => {
     const toning = await installTemplate('sikilasma')
     expect(toning.template_version).toBe(TEMPLATE_VERSION.sikilasma)
     const days = await programDays(toning.id)
-    expect(days.every((d) => !d.optional)).toBe(true)
-    const monday = await dayItems(days[0].id)
-    expect(monday[0]).toMatchObject({ exercise_id: 'Barbell_Bench_Press_-_Medium_Grip', sets: 3, rep_min: 10 })
-    expect(monday[2].exercise_id).toBe('Dumbbell_Shoulder_Press')
-    expect(monday.some((i) => i.block === 'cardio')).toBe(false)
-    const tuesday = await dayItems(days[1].id)
-    const all = await Promise.all(days.map((d) => dayItems(d.id)))
-    const ids = all.flat().map((i) => i.exercise_id)
-    expect(ids).toContain('Leg_Press')
+    expect(days.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(days.filter((d) => !d.optional).map((d) => d.weekday)).toEqual([1, 4])
+    for (const day of days) {
+      const items = await dayItems(day.id)
+      if (day.optional) expect(items).toMatchObject([{ block: 'cardio', duration_min: 45 }])
+      else expect(items.some((i) => i.block === 'cardio')).toBe(false)
+    }
+    const ids = (await Promise.all(days.map((d) => dayItems(d.id)))).flat().map((i) => i.exercise_id)
     expect(ids).not.toContain('Split_Squat_with_Dumbbells')
     expect(ids).not.toContain('Face_Pull')
-    expect(tuesday.length).toBeGreaterThan(0)
-    const wednesday = await dayItems(days[2].id)
-    expect(wednesday).toMatchObject([{ block: 'cardio', duration_min: 45 }])
   })
 })
 

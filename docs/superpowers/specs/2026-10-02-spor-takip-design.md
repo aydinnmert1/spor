@@ -82,3 +82,7 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 
 - Split squat replaced by leg press for both (Mert Thu superset with chin-ups 3×8-10; Simge Tue 3×12-15).
 - Face pull replaced by reverse pec deck (rear delts) for Simge on Thu 2×15-20. Mert's program had no face pull.
+
+## Update 2026-11-02 — Simge v5: two full-body days
+
+- Mon full body A (squat, bench, cable row, hip thrust, lateral raise, plank) and Thu full body B (RDL, leg press, DB shoulder press, lat pulldown, incline DB press, reverse pec deck, hanging leg raise). Every other day is optional 45 min cardio. `TEMPLATE_VERSION.sikilasma = 5`; Mert unchanged.
