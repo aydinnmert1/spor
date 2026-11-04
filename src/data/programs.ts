@@ -12,7 +12,7 @@ import type { Block, PlanKey } from '../lib/types'
 // Supersets: the first exercise has 0 s rest, the second carries the rest between rounds.
 
 /** Bump a plan's version to replace that plan's active program on next launch. */
-export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 6, sikilasma: 5 }
+export const TEMPLATE_VERSION: Record<PlanKey, number> = { guc: 7, sikilasma: 6 }
 
 /** [sets, repMin, repMax, restSec] */
 type Dose = [number, number, number, number]
@@ -74,7 +74,8 @@ const FULL_BODY: TemplateDay[] = [
       { exercise: 'Barbell_Squat', block: 'main', guc: null, sikilasma: [3, 10, 12, 90], note: `${WARMUP} Bar formu bozuluyorsa o gün goblet squat yap.` },
       { exercise: 'Barbell_Bench_Press_-_Medium_Grip', block: 'main', guc: null, sikilasma: [3, 10, 12, 90], note: '1-2 hafif ısınma seti yeterli.' },
       { exercise: 'Seated_Cable_Rows', block: 'accessory', guc: null, sikilasma: [3, 10, 12, 75], note: 'Kürek kemiklerini sık; gövdeyle sallanma.' },
-      { exercise: 'Barbell_Hip_Thrust', block: 'accessory', guc: null, sikilasma: [3, 10, 12, 75], note: 'Tepede 1 sn kalçayı sık.' },
+      { exercise: 'Thigh_Adductor', block: 'accessory', guc: null, sikilasma: [3, 12, 15, 0], note: 'İç bacak (adductor makinesi). Süperset 1/2: dinlenmeden abductor’a geç.' },
+      { exercise: 'Thigh_Abductor', block: 'accessory', guc: null, sikilasma: [3, 12, 15, 60], note: 'Dış kalça (abductor makinesi); hafif öne eğilmek kalçayı daha çok çalıştırır. Süperset 2/2: sonra dinlen, adductor’a dön.' },
       { exercise: 'Side_Lateral_Raise', block: 'accessory', guc: null, sikilasma: [2, 12, 15, 45] },
       { exercise: 'Plank', block: 'accessory', guc: null, sikilasma: [3, 30, 45, 30], note: 'Tekrar = saniye' },
     ],
@@ -146,8 +147,8 @@ const FOUR_DAY: TemplateDay[] = [
     weekday: 2,
     items: [
       { exercise: 'Barbell_Bench_Press_-_Medium_Grip', block: 'main', guc: [5, 3, 5, 180], sikilasma: null, note: `${HEAVY} ~%80-87 1RM.` },
-      { exercise: 'Dips_-_Chest_Version', block: 'accessory', guc: [3, 6, 8, 0], sikilasma: null, note: `İtme, ağırlık kemeriyle. ${SS1('row')}` },
-      { exercise: 'Bent_Over_Barbell_Row', block: 'accessory', guc: [4, 6, 8, 120], sikilasma: null, note: `Yatay çekme. ${SS2('dips')} 4. sette row tek.` },
+      { exercise: 'Dumbbell_Bench_Press', block: 'accessory', guc: [3, 8, 10, 0], sikilasma: null, note: `Dips yerine (geçici): avuçlar birbirine bakan nötr tutuş, dirsekler gövdeye yakın; göğüs + triceps. ${SS1('row')}` },
+      { exercise: 'Bent_Over_Barbell_Row', block: 'accessory', guc: [4, 6, 8, 120], sikilasma: null, note: `Yatay çekme. ${SS2('dambıl press')} 4. sette row tek.` },
       { exercise: 'Ab_Roller', block: 'accessory', guc: [3, 8, 12, 0], sikilasma: null, note: `Karın (öne kaymaya direnç). ${SS1('farmer’s walk')}` },
       { exercise: 'Farmers_Walk', block: 'accessory', guc: [3, 30, 40, 90], sikilasma: null, note: `Kavrama. Tekrar = metre. ${SS2('ab wheel')}` },
     ],

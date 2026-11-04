@@ -86,3 +86,8 @@ Vitest with fake-indexeddb covers e1RM, weekday mapping, targets, template insta
 ## Update 2026-11-02 — Simge v5: two full-body days
 
 - Mon full body A (squat, bench, cable row, hip thrust, lateral raise, plank) and Thu full body B (RDL, leg press, DB shoulder press, lat pulldown, incline DB press, reverse pec deck, hanging leg raise). Every other day is optional 45 min cardio. `TEMPLATE_VERSION.sikilasma = 5`; Mert unchanged.
+
+## Update 2026-11-04 — swaps (guc v7, sikilasma v6)
+
+- Simge Mon: hip thrust replaced by an adductor + abductor machine superset (3×12-15 each, 60 s after the pair). Mon ~46 min.
+- Mert Tue: weighted dips replaced (temporarily, until he can do dips) by a neutral-grip dumbbell bench press 3×8-10 in the superset with barbell rows.

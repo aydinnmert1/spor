@@ -476,6 +476,33 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
     ],
     tips: 'Hafif kilo, yüksek tekrar; hareketi omuzun arkasıyla yap, beli kaldırma.',
   },
+  Dumbbell_Bench_Press: {
+    name: 'Dambıl Bench Press',
+    instructions: [
+      'Düz sehpaya uzan, dambılları göğüs hizasında tut; ayaklar yere sağlam bassın.',
+      'Kürek kemiklerini geri ve aşağı çek.',
+      'Dambılları yukarı it, tepede birbirine yaklaştır.',
+      'Kontrollü şekilde göğüste esneme hissedene kadar indir.',
+    ],
+    tips: 'Nötr tutuş (avuçlar karşılıklı) ve gövdeye yakın dirsekler triceps’i daha çok çalıştırır; dips’e geçiş için iyi hazırlık.',
+  },
+  Thigh_Adductor: {
+    name: 'Adductor Makinesi (İç Bacak)',
+    instructions: [
+      'Makineye otur, pedleri dizlerin iç tarafına yerleştir; başlangıç açıklığını rahat bir esnemeye ayarla.',
+      'Bacakları kontrollü şekilde birbirine doğru kapat, sonunda 1 sn sık.',
+      'Yavaşça açarak başlangıca dön; ağırlıklar birbirine çarpmasın.',
+    ],
+  },
+  Thigh_Abductor: {
+    name: 'Abductor Makinesi (Dış Kalça)',
+    instructions: [
+      'Makineye otur, pedleri dizlerin dış tarafına yerleştir.',
+      'Bacakları kontrollü şekilde dışa aç, en dışta 1 sn sık.',
+      'Yavaşça kapatarak başlangıca dön.',
+    ],
+    tips: 'Gövdeyi hafif öne eğmek kalça kaslarını (gluteus) daha fazla devreye sokar.',
+  },
   // Common alternatives (name only)
   'Close-Grip_Front_Lat_Pulldown': { name: 'Lat Pulldown (Dar Tutuş)' },
   Barbell_Walking_Lunge: { name: 'Yürüyerek Lunge (Halter)' },
@@ -487,7 +514,6 @@ export const EXERCISES_TR: Record<string, TrExercise> = {
   Russian_Twist: { name: 'Russian Twist' },
   Mountain_Climbers: { name: 'Mountain Climber' },
   Seated_Leg_Curl: { name: 'Oturarak Leg Curl' },
-  Dumbbell_Bench_Press: { name: 'Dambıl Bench Press' },
   Hammer_Grip_Incline_DB_Bench_Press: { name: 'Hammer Tutuş Eğimli Dambıl Press' },
   Running_Treadmill: { name: 'Koşu (Koşu Bandı)' },
   Bicycling: { name: 'Bisiklet' },
